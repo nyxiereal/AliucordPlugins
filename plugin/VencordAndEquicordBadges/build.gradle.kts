@@ -7,6 +7,4 @@ aliucord {
     changelog.set("""
         Initial release
         """.trimIndent())
-
-    excludeFromUpdaterJson.set(true)
 }
