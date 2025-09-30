@@ -1,7 +1,7 @@
 name: Build
 
 # https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#concurrency
-concurrency: 
+concurrency:
   group: "build"
   cancel-in-progress: true
 
@@ -10,11 +10,11 @@ on:
     branches:
       - main
     paths-ignore:
-      - '*.md'
+      - "*.md"
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@master
