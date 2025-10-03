@@ -14,7 +14,7 @@ import com.discord.widgets.settings.WidgetSettings
 import com.lytefast.flexinput.R
 
 @AliucordPlugin
-class QuestsBackport : Plugin() {
+class ViewQuests : Plugin() {
     override fun start(context: Context) {
         // Add quest entry to the menu
         patcher.patch(

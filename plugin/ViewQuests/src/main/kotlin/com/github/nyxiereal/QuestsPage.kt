@@ -67,7 +67,7 @@ data class QuestTaskProgress(
 )
 
 class QuestsPage : SettingsPage() {
-    private val logger = Logger("QuestsBackport")
+    private val logger = Logger("ViewQuests")
 
     override fun onViewBound(view: View) {
         super.onViewBound(view)

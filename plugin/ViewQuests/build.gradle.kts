@@ -1,7 +1,7 @@
 version = "1.0.0"
 
 description =
-        "Backports Quests to Aliucord because why not"
+        "Makes you able to view quests in the settings"
 
 aliucord {
     changelog.set("""
