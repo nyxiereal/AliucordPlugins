@@ -2,4 +2,5 @@
 
 nyx buit these lmao
 
-thanks zt64 for the template :3
+## ViewQuests
+Allows you to view discord quests directly in the user settings.
