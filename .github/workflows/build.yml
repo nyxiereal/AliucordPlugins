@@ -1,6 +1,8 @@
 name: Build
 
-# https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#concurrency
+permissions:
+  contents: write  # allow pushing built artifacts back to the repo
+
 concurrency: 
   group: "build"
   cancel-in-progress: true
@@ -25,6 +27,9 @@ jobs:
         with:
           ref: "builds"
           path: "builds"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+          fetch-depth: 0
 
       - name: Setup JDK 21
         uses: actions/setup-java@v5
@@ -54,5 +59,7 @@ jobs:
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git add .
-          git commit -m "Build $GITHUB_SHA" || exit 0   # do not error if nothing to commit
+          git commit -m "Build $GITHUB_SHA" || exit 0
+          # ensure remote uses token auth (works if persist-credentials not present)
+          git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           git push --force
