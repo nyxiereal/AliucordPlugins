@@ -26,7 +26,7 @@ class ViewQuests : Plugin() {
                                     LinearLayoutCompat
                     val ctx = layout.context
 
-                    val baseIndex =
+                val baseIndex =
                             layout.indexOfChild(
                                     layout.findViewById<TextView>(
                                             Utils.getResId("qr_scanner", "id")

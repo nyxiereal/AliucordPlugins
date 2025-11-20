@@ -4,19 +4,27 @@ pluginManagement {
     repositories {
         google()
         gradlePluginPortal()
-        maven("https://maven.aliucord.com/snapshots")
-        maven("https://jitpack.io")
+        maven {
+            name = "aliucord"
+            url = uri("https://maven.aliucord.com/releases")
+        }
     }
 }
 
 dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
-        maven("https://maven.aliucord.com/snapshots")
+        maven {
+            name = "aliucord"
+            url = uri("https://maven.aliucord.com/releases")
+        }
+        maven {
+            name = "aliucord"
+            url = uri("https://maven.aliucord.com/snapshots")
+        }
     }
-
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
 }
 
 rootProject.name = "aliucord-plugins"
