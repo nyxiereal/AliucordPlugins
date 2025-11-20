@@ -40,9 +40,13 @@ jobs:
           cd $GITHUB_WORKSPACE/src
           chmod +x gradlew
           ./gradlew make generateUpdaterJson
-          shopt -s globstar
-          cp **/build/*.zip $GITHUB_WORKSPACE/builds
-          cp build/updater.json $GITHUB_WORKSPACE/builds
+          shopt -s globstar nullglob
+          for file in **/build/**/*.zip; do
+            cp -v "$file" "$GITHUB_WORKSPACE/builds/"
+          done
+          if [[ -f build/updater.json ]]; then
+            cp -v build/updater.json "$GITHUB_WORKSPACE/builds/"
+          fi
 
       - name: Push builds
         run: |
