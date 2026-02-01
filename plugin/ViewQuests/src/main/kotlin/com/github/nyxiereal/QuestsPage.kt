@@ -16,7 +16,6 @@ import com.aliucord.utils.DimenUtils
 import com.aliucord.utils.SerializedName
 import com.discord.utilities.time.TimeUtils
 import com.lytefast.flexinput.R
-import java.util.*
 
 data class QuestsResponse(val quests: List<Quest>)
 
@@ -69,11 +68,35 @@ data class QuestTaskProgress(
 class QuestsPage : SettingsPage() {
     private val logger = Logger("ViewQuests")
 
+    private fun addCollectiblesButton(context: Context) {
+        TextView(context, null, 0, R.i.UiKit_Settings_Item_Icon).apply {
+            text = "View Collectibles"
+            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold)
+            setCompoundDrawablesWithIntrinsicBounds(
+                    Utils.tintToTheme(context.getDrawable(R.e.ic_gift_24dp)),
+                    null,
+                    null,
+                    null
+            )
+            setOnClickListener { Utils.openPageWithProxy(context, CollectiblesPage()) }
+            layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, DimenUtils.dpToPx(16))
+            }
+            linearLayout.addView(this)
+        }
+    }
+
     override fun onViewBound(view: View) {
         super.onViewBound(view)
         setActionBarTitle("Loading Quests...")
 
         val context = view.context
+
+        // Add button to navigate to collectibles page
+        addCollectiblesButton(context)
 
         // Fetch quests from discord in a background thread
         Utils.threadPool.execute {
