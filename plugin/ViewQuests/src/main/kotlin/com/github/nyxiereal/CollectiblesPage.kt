@@ -5,7 +5,6 @@ import android.graphics.Color
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import com.aliucord.Constants
 import com.aliucord.Http
@@ -90,85 +89,44 @@ class CollectiblesPage : SettingsPage() {
     }
 
     private fun addNoCollectiblesView(context: Context) {
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).run {
-            text = "No collectibles purchased yet"
-            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_medium)
+        createSubTextView(
+            context,
+            "No collectibles purchased yet",
+            Padding(16, 32, 16, 32)
+        ).apply {
             gravity = Gravity.CENTER
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(32),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(32)
-            )
             linearLayout.addView(this)
         }
     }
 
     private fun addErrorView(context: Context, error: String) {
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).run {
-            text = "Failed to load collectibles:\n$error"
-            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_medium)
+        createSubTextView(
+            context,
+            "Failed to load collectibles:\n$error",
+            Padding(16, 32, 16, 32),
+            Color.parseColor("#ED4245")
+        ).apply {
             gravity = Gravity.CENTER
-            setTextColor(Color.parseColor("#ED4245"))
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(32),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(32)
-            )
             linearLayout.addView(this)
         }
     }
 
     private fun addCollectibleCard(context: Context, collectible: CollectiblePurchase) {
-        val cardContainer =
-                LinearLayout(context).apply {
-                    orientation = LinearLayout.VERTICAL
-                    background =
-                            android.graphics.drawable.GradientDrawable().apply {
-                                setColor(Color.parseColor("#2F3136"))
-                                cornerRadius = DimenUtils.dpToPx(8).toFloat()
-                            }
-                    layoutParams =
-                            LinearLayout.LayoutParams(
-                                            LinearLayout.LayoutParams.MATCH_PARENT,
-                                            LinearLayout.LayoutParams.WRAP_CONTENT
-                                    )
-                                    .apply {
-                                        setMargins(
-                                                DimenUtils.dpToPx(4),
-                                                DimenUtils.dpToPx(2),
-                                                DimenUtils.dpToPx(4),
-                                                DimenUtils.dpToPx(2)
-                                        )
-                                    }
-                    setPadding(0, 0, 0, DimenUtils.dpToPx(8))
-                }
+        val cardContainer = createCard(context, 8)
 
         // Title
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_Header).apply {
-            text = collectible.name
-            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold)
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(8)
-            )
-            cardContainer.addView(this)
-        }
+        createHeaderTextView(
+            context,
+            collectible.name,
+            Padding(16, 16, 16, 8)
+        ).apply { cardContainer.addView(this) }
 
         // Summary
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-            text = collectible.summary
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(4),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(12)
-            )
-            cardContainer.addView(this)
-        }
+        createSubTextView(
+            context,
+            collectible.summary,
+            Padding(16, 4, 16, 12)
+        ).apply { cardContainer.addView(this) }
 
         // Type information
         addTypeInfo(context, collectible, cardContainer)
@@ -189,17 +147,11 @@ class CollectiblesPage : SettingsPage() {
             collectible: CollectiblePurchase,
             container: LinearLayout
     ) {
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_Label).apply {
-            text = "Type: ${getCollectibleType(collectible.type)} • ${getPurchaseType(collectible.purchaseType)}"
-            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold)
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(8),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(4)
-            )
-            container.addView(this)
-        }
+        createLabelTextView(
+            context,
+            "Type: ${getCollectibleType(collectible.type)} • ${getPurchaseType(collectible.purchaseType)}",
+            Padding(16, 8, 16, 4)
+        ).apply { container.addView(this) }
     }
 
     private fun addItemsInfo(
@@ -208,29 +160,18 @@ class CollectiblesPage : SettingsPage() {
             container: LinearLayout
     ) {
         if (items.isNotEmpty()) {
-            TextView(context, null, 0, R.i.UiKit_Settings_Item_Label).apply {
-                text = "Items:"
-                typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold)
-                setPadding(
-                        DimenUtils.dpToPx(16),
-                        DimenUtils.dpToPx(12),
-                        DimenUtils.dpToPx(16),
-                        DimenUtils.dpToPx(4)
-                )
-                container.addView(this)
-            }
+            createLabelTextView(
+                context,
+                "Items:",
+                Padding(16, 12, 16, 4)
+            ).apply { container.addView(this) }
 
             items.forEach { item ->
-                TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-                    text = "- ${item.label}"
-                    setPadding(
-                            DimenUtils.dpToPx(24),
-                            DimenUtils.dpToPx(2),
-                            DimenUtils.dpToPx(16),
-                            DimenUtils.dpToPx(2)
-                    )
-                    container.addView(this)
-                }
+                createSubTextView(
+                    context,
+                    "- ${item.label}",
+                    Padding(24, 2, 16, 2)
+                ).apply { container.addView(this) }
             }
         }
     }
@@ -241,21 +182,16 @@ class CollectiblesPage : SettingsPage() {
             expiresAt: String?,
             container: LinearLayout
     ) {
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-            val expiryText = if (expiresAt != null) {
-                "Expires: ${formatDate(context, expiresAt)}"
-            } else {
-                "Expires: Never"
-            }
-            text = "Purchased: ${formatDate(context, purchasedAt)}\n$expiryText"
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(12),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(8)
-            )
-            container.addView(this)
+        val expiryText = if (expiresAt != null) {
+            "Expires: ${formatDate(context, expiresAt)}"
+        } else {
+            "Expires: Never"
         }
+        createSubTextView(
+            context,
+            "Purchased: ${formatDate(context, purchasedAt)}\n$expiryText",
+            Padding(16, 12, 16, 8)
+        ).apply { container.addView(this) }
     }
 
     private fun getCollectibleType(type: Int): String =
@@ -273,14 +209,4 @@ class CollectiblesPage : SettingsPage() {
                 10 -> "Quest Reward"
                 else -> "Unknown Purchase Type"
             }
-
-    private fun formatDate(context: Context, isoDate: String): String {
-        return try {
-            val timestamp = TimeUtils.parseUTCDate(isoDate)
-            if (timestamp == 0L) return isoDate
-            TimeUtils.INSTANCE.renderUtcDate(timestamp, context, 2)
-        } catch (e: Exception) {
-            isoDate
-        }
-    }
 }

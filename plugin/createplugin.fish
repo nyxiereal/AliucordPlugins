@@ -38,7 +38,8 @@ description =
 
 aliucord {
     changelog.set(\"\"\"
-        Initial release
+        # 1.0.0
+        - Initial release
         \"\"\".trimIndent())
 }
 " > "$plugin_name/build.gradle.kts"

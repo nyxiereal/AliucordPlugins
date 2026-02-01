@@ -5,7 +5,6 @@ import android.graphics.Color
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import com.aliucord.Constants
 import com.aliucord.Http
@@ -69,19 +68,21 @@ class QuestsPage : SettingsPage() {
     private val logger = Logger("ViewQuests")
 
     private fun addCollectiblesButton(context: Context) {
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_Icon).apply {
-            text = "View Collectibles"
-            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold)
+        createHeaderTextView(
+            context,
+            "View Collectibles",
+            Padding(0, 0, 0, 16)
+        ).apply {
             setCompoundDrawablesWithIntrinsicBounds(
-                    Utils.tintToTheme(context.getDrawable(R.e.ic_gift_24dp)),
-                    null,
-                    null,
-                    null
+                Utils.tintToTheme(context.getDrawable(R.e.ic_gift_24dp)),
+                null,
+                null,
+                null
             )
             setOnClickListener { Utils.openPageWithProxy(context, CollectiblesPage()) }
             layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 setMargins(0, 0, 0, DimenUtils.dpToPx(16))
             }
@@ -125,88 +126,44 @@ class QuestsPage : SettingsPage() {
         }
     }
 
-    // Display a message when there are no quests
     private fun addNoQuestsView(context: Context) {
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).run {
-            text = "No quests available at the moment"
-            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_medium)
+        createSubTextView(
+            context,
+            "No quests available at the moment",
+            Padding(16, 32, 16, 32)
+        ).apply {
             gravity = Gravity.CENTER
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(32),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(32)
-            )
             linearLayout.addView(this)
         }
     }
 
-    // Display an error message if fetching quests failed
     private fun addErrorView(context: Context, error: String) {
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).run {
-            text = "Failed to load quests:\n$error"
-            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_medium)
+        createSubTextView(
+            context,
+            "Failed to load quests:\n$error",
+            Padding(16, 32, 16, 32),
+            Color.parseColor("#ED4245")
+        ).apply {
             gravity = Gravity.CENTER
-            setTextColor(Color.parseColor("#ED4245"))
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(32),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(32)
-            )
             linearLayout.addView(this)
         }
     }
 
-    // Ui component for adding a quest card
     private fun addQuestCard(context: Context, quest: Quest) {
         val config = quest.config
-        val cardContainer =
-                LinearLayout(context).apply {
-                    orientation = LinearLayout.VERTICAL
-                    background =
-                            android.graphics.drawable.GradientDrawable().apply {
-                                setColor(Color.parseColor("#2F3136"))
-                                cornerRadius = DimenUtils.dpToPx(8).toFloat()
-                            }
-                    layoutParams =
-                            LinearLayout.LayoutParams(
-                                            LinearLayout.LayoutParams.MATCH_PARENT,
-                                            LinearLayout.LayoutParams.WRAP_CONTENT
-                                    )
-                                    .apply {
-                                        setMargins(
-                                                DimenUtils.dpToPx(4),
-                                                DimenUtils.dpToPx(2),
-                                                DimenUtils.dpToPx(4),
-                                                DimenUtils.dpToPx(2)
-                                        )
-                                    }
-                    setPadding(0, 0, 0, DimenUtils.dpToPx(8))
-                }
+        val cardContainer = createCard(context, 8)
 
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_Header).apply {
-            text = config.messages.questName
-            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold)
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(8)
-            )
-            cardContainer.addView(this)
-        }
+        createHeaderTextView(
+            context,
+            config.messages.questName,
+            Padding(16, 16, 16, 8)
+        ).apply { cardContainer.addView(this) }
 
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-            text = "${config.messages.gameTitle}\nPromoted by ${config.messages.gamePublisher}"
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(4),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(12)
-            )
-            cardContainer.addView(this)
-        }
+        createSubTextView(
+            context,
+            "${config.messages.gameTitle}\nPromoted by ${config.messages.gamePublisher}",
+            Padding(16, 4, 16, 12)
+        ).apply { cardContainer.addView(this) }
 
         addTaskInfo(context, config.taskConfig, cardContainer)
         addRewardInfo(context, config.rewardsConfig, cardContainer)
@@ -220,29 +177,18 @@ class QuestsPage : SettingsPage() {
             taskConfig: QuestTaskConfig,
             container: LinearLayout
     ) {
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_Label).apply {
-            text = "Tasks:"
-            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold)
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(8),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(4)
-            )
-            container.addView(this)
-        }
+        createLabelTextView(
+            context,
+            "Tasks:",
+            Padding(16, 8, 16, 4)
+        ).apply { container.addView(this) }
 
         taskConfig.tasks.values.forEach { task ->
-            TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-                text = "- ${getTaskDescription(task)}"
-                setPadding(
-                        DimenUtils.dpToPx(24),
-                        DimenUtils.dpToPx(2),
-                        DimenUtils.dpToPx(16),
-                        DimenUtils.dpToPx(2)
-                )
-                container.addView(this)
-            }
+            createSubTextView(
+                context,
+                "- ${getTaskDescription(task)}",
+                Padding(24, 2, 16, 2)
+            ).apply { container.addView(this) }
         }
     }
 
@@ -251,31 +197,19 @@ class QuestsPage : SettingsPage() {
             rewardsConfig: QuestRewardsConfig,
             container: LinearLayout
     ) {
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_Label).apply {
-            text = "Rewards:"
-            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold)
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(12),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(4)
-            )
-            container.addView(this)
-        }
+        createLabelTextView(
+            context,
+            "Rewards:",
+            Padding(16, 12, 16, 4)
+        ).apply { container.addView(this) }
 
         rewardsConfig.rewards.forEach { reward ->
-            TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-                val rewardName =
-                        reward.messages.nameWithArticle.removePrefix("a ").removePrefix("an ")
-                text = "- $rewardName (${getRewardType(reward.type)})"
-                setPadding(
-                        DimenUtils.dpToPx(24),
-                        DimenUtils.dpToPx(2),
-                        DimenUtils.dpToPx(16),
-                        DimenUtils.dpToPx(2)
-                )
-                container.addView(this)
-            }
+            val rewardName = reward.messages.nameWithArticle.removePrefix("a ").removePrefix("an ")
+            createSubTextView(
+                context,
+                "- $rewardName (${getRewardType(reward.type)})",
+                Padding(24, 2, 16, 2)
+            ).apply { container.addView(this) }
         }
     }
 
@@ -284,41 +218,31 @@ class QuestsPage : SettingsPage() {
             userStatus: QuestUserStatus,
             container: LinearLayout
     ) {
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_Label).apply {
-            text =
-                    when {
-                        userStatus.claimedAt != null -> "Status: Claimed"
-                        userStatus.completedAt != null -> "Status: Completed"
-                        userStatus.enrolledAt != null -> "Status: In Progress"
-                        else -> "Status: Unknown"
-                    }
-            typeface = ResourcesCompat.getFont(context, Constants.Fonts.whitney_semibold)
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(12),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(4)
-            )
-            container.addView(this)
+        val statusText = when {
+            userStatus.claimedAt != null -> "Status: Claimed"
+            userStatus.completedAt != null -> "Status: Completed"
+            userStatus.enrolledAt != null -> "Status: In Progress"
+            else -> "Status: Unknown"
         }
+        
+        createLabelTextView(
+            context,
+            statusText,
+            Padding(16, 12, 16, 4)
+        ).apply { container.addView(this) }
 
         if (userStatus.progress != null && userStatus.completedAt == null) {
             userStatus.progress.values.forEach { progress ->
-                TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-                    text =
-                            if (progress.completedAt != null) {
-                                "- ${progress.eventName}: Completed"
-                            } else {
-                                "- ${progress.eventName}: ${formatProgressValue(progress.value)}"
-                            }
-                    setPadding(
-                            DimenUtils.dpToPx(24),
-                            DimenUtils.dpToPx(2),
-                            DimenUtils.dpToPx(16),
-                            DimenUtils.dpToPx(2)
-                    )
-                    container.addView(this)
+                val progressText = if (progress.completedAt != null) {
+                    "- ${progress.eventName}: Completed"
+                } else {
+                    "- ${progress.eventName}: ${formatProgressValue(progress.value)}"
                 }
+                createSubTextView(
+                    context,
+                    progressText,
+                    Padding(24, 2, 16, 2)
+                ).apply { container.addView(this) }
             }
         }
     }
@@ -329,17 +253,11 @@ class QuestsPage : SettingsPage() {
             expiresAt: String,
             container: LinearLayout
     ) {
-        TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-            text =
-                    "Starts: ${formatDate(context, startsAt)}\nExpires: ${formatDate(context, expiresAt)}"
-            setPadding(
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(12),
-                    DimenUtils.dpToPx(16),
-                    DimenUtils.dpToPx(8)
-            )
-            container.addView(this)
-        }
+        createSubTextView(
+            context,
+            "Starts: ${formatDate(context, startsAt)}\nExpires: ${formatDate(context, expiresAt)}",
+            Padding(16, 12, 16, 8)
+        ).apply { container.addView(this) }
     }
 
     private fun getTaskDescription(task: QuestTask): String =
@@ -355,6 +273,19 @@ class QuestsPage : SettingsPage() {
                 else -> task.title ?: task.eventName
             }
 
+    private fun formatDuration(seconds: Int): String {
+        val minutes = seconds / 60
+        return when {
+            minutes < 60 -> "$minutes minutes"
+            else -> {
+                val hours = minutes / 60
+                val remainingMinutes = minutes % 60
+                if (remainingMinutes > 0) "$hours hours $remainingMinutes minutes"
+                else "$hours hours"
+            }
+        }
+    }
+
     private fun getRewardType(type: Int): String =
             when (type) {
                 1 -> "Reward Code"
@@ -365,28 +296,9 @@ class QuestsPage : SettingsPage() {
                 else -> "Unknown"
             }
 
-    private fun formatDuration(seconds: Int): String {
-        val minutes = seconds / 60
-        if (minutes < 60) return "$minutes minutes"
-        val hours = minutes / 60
-        val remainingMinutes = minutes % 60
-        return if (remainingMinutes > 0) "$hours hours $remainingMinutes minutes"
-        else "$hours hours"
-    }
-
     private fun formatProgressValue(value: Int): String =
             if (value >= 60) "${value / 60} minutes" else "$value seconds"
 
-    private fun formatDate(context: Context, isoDate: String): String {
-        return try {
-            // Parse the UTC date string to timestamp
-            val timestamp = TimeUtils.parseUTCDate(isoDate)
-            if (timestamp == 0L) return isoDate
-
-            // Format using device's locale and date format preferences
-            TimeUtils.INSTANCE.renderUtcDate(timestamp, context, 2)
-        } catch (e: Exception) {
-            isoDate
-        }
-    }
+    private fun formatDate(context: Context, isoDate: String): String =
+        com.github.nyxiereal.formatDate(context, isoDate)
 }
