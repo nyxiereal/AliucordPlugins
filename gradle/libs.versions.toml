@@ -1,9 +1,9 @@
 [versions]
 aliucord = "2.6.0"
-aliucord-gradle = "2.2.0"
-android = "8.13.1"
+aliucord-gradle = "2.3.0"
+android = "8.13.2"
 discord = "126021"
-kotlin = "2.2.21"
+kotlin = "2.3.0"
 #noinspection GradleDependency
 kotlin-stdlib = "1.5.21"
 ktlint = "1.8.0"

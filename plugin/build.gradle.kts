@@ -39,7 +39,6 @@ subprojects {
     }
 
     configure<AliucordExtension> {
-        // TODO: Change to your name and user ID
         author("nyxiereal", 1242567443742986373L, hyperlink = true)
 
         github("https://github.com/nyxiereal/AliucordPlugins")

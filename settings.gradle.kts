@@ -27,7 +27,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "aliucord-plugins"
+rootProject.name = "AliucordPlugins"
 
 rootDir
     .resolve("plugin")
