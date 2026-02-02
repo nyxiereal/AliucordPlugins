@@ -1,0 +1,26 @@
+package com.github.nyxiereal.layoutcontroller.patchers
+
+import com.github.nyxiereal.layoutcontroller.patchers.base.BasePatcher
+import com.github.nyxiereal.layoutcontroller.util.Description
+import com.github.nyxiereal.layoutcontroller.util.Key
+import com.github.nyxiereal.layoutcontroller.util.hideCompletely
+import com.discord.widgets.user.usersheet.WidgetUserSheet
+import com.discord.widgets.user.usersheet.WidgetUserSheetViewModel
+import de.robv.android.xposed.XC_MethodHook
+
+class NotesPatch : BasePatcher(
+    key = Key.NOTES_KEY,
+    description = Description.NOTES_DESCRIPTION,
+    requiresRestart = false,
+    classMember = WidgetUserSheet::class.java.getDeclaredMethod(
+        "configureNote",
+        WidgetUserSheetViewModel.ViewState.Loaded::class.java
+    )
+) {
+    override fun patchBody(callFrame: XC_MethodHook.MethodHookParam) {
+        val binding = WidgetUserSheet.`access$getBinding$p`(callFrame.thisObject as WidgetUserSheet)
+        binding.A.hideCompletely()
+        binding.B.hideCompletely()
+        binding.z.hideCompletely()
+    }
+}

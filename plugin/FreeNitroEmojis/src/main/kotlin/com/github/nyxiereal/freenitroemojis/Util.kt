@@ -1,4 +1,4 @@
-package com.github.nyxiereal
+package com.github.nyxiereal.freenitroemojis
 
 // Default settings
 const val EMOTE_SIZE_DEFAULT = "48"

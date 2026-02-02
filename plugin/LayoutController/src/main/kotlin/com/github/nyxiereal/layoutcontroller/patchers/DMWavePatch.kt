@@ -1,0 +1,25 @@
+package com.github.nyxiereal.layoutcontroller.patchers
+
+import com.discord.widgets.chat.list.adapter.WidgetChatListAdapterItemStickerGreet
+import com.discord.widgets.chat.list.entries.ChatListEntry
+import com.github.nyxiereal.layoutcontroller.patchers.base.BasePatcher
+import com.github.nyxiereal.layoutcontroller.util.Description
+import com.github.nyxiereal.layoutcontroller.util.Key
+import com.github.nyxiereal.layoutcontroller.util.hideCompletely
+import de.robv.android.xposed.XC_MethodHook
+
+class DMWavePatch : BasePatcher(
+    key = Key.DM_WAVE_KEY,
+    description = Description.DM_WAVE_DESCRIPTION,
+    requiresRestart = false,
+    classMember = WidgetChatListAdapterItemStickerGreet::class.java.getDeclaredMethod(
+        "onConfigure",
+        Int::class.javaPrimitiveType,
+        ChatListEntry::class.java
+    ),
+) {
+    override fun patchBody(callFrame: XC_MethodHook.MethodHookParam) {
+        val thisObj = callFrame.thisObject as WidgetChatListAdapterItemStickerGreet
+        thisObj.itemView.hideCompletely()
+    }
+}

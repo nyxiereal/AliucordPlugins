@@ -1,4 +1,4 @@
-package com.github.nyxiereal
+package com.github.nyxiereal.freenitroemojis
 
 import android.annotation.SuppressLint
 import android.text.InputType

@@ -16,6 +16,7 @@ import com.discord.stores.StoreStream
 import de.robv.android.xposed.XC_MethodHook
 import java.lang.reflect.Field
 import java.net.URL
+import com.github.nyxiereal.freenitroemojis.*
 
 @AliucordPlugin
 class FreeNitroEmojis : Plugin() {

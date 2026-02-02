@@ -12,6 +12,7 @@ import com.aliucord.entities.Plugin
 import com.aliucord.patcher.Hook
 import com.discord.widgets.settings.WidgetSettings
 import com.lytefast.flexinput.R
+import com.github.nyxiereal.viewquests.*
 
 @AliucordPlugin
 class ViewQuests : Plugin() {

@@ -1,12 +1,10 @@
-package com.github.nyxiereal
+package com.github.nyxiereal.viewquests
 
 import android.content.Context
 import android.graphics.Color
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
-import androidx.core.content.res.ResourcesCompat
-import com.aliucord.Constants
 import com.aliucord.Http
 import com.aliucord.Logger
 import com.aliucord.Utils
@@ -299,6 +297,16 @@ class QuestsPage : SettingsPage() {
     private fun formatProgressValue(value: Int): String =
             if (value >= 60) "${value / 60} minutes" else "$value seconds"
 
-    private fun formatDate(context: Context, isoDate: String): String =
-        com.github.nyxiereal.formatDate(context, isoDate)
+    private fun formatDate(context: Context, isoDate: String): String {
+        return try {
+            // Parse the UTC date string to timestamp
+            val timestamp = TimeUtils.parseUTCDate(isoDate)
+            if (timestamp == 0L) return isoDate
+
+            // Format using device's locale and date format preferences
+            TimeUtils.INSTANCE.renderUtcDate(timestamp, context, 2)
+        } catch (e: Exception) {
+            isoDate
+        }
+    }
 }

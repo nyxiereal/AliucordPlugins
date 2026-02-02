@@ -4,6 +4,7 @@ description =
         "Makes you able to view quests in the settings"
 
 aliucord {
+    author("nyxiereal", 1242567443742986373L)
     changelog.set("""
         # 1.0.1:
         - Minor fixes

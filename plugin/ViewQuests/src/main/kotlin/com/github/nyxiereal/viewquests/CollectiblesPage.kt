@@ -1,20 +1,15 @@
-package com.github.nyxiereal
+package com.github.nyxiereal.viewquests
 
 import android.content.Context
 import android.graphics.Color
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
-import androidx.core.content.res.ResourcesCompat
-import com.aliucord.Constants
 import com.aliucord.Http
 import com.aliucord.Logger
 import com.aliucord.Utils
 import com.aliucord.fragments.SettingsPage
-import com.aliucord.utils.DimenUtils
 import com.aliucord.utils.SerializedName
-import com.discord.utilities.time.TimeUtils
-import com.lytefast.flexinput.R
 
 data class CollectiblePurchase(
         @SerializedName("sku_id") val skuId: String,
