@@ -49,8 +49,8 @@ jobs:
           for file in **/build/**/*.zip; do
             cp -v "$file" "$GITHUB_WORKSPACE/builds/"
           done
-          if [[ -f build/updater.json ]]; then
-            cp -v build/updater.json "$GITHUB_WORKSPACE/builds/"
+          if [[ -f build/outputs/updater.json ]]; then
+            cp -v build/outputs/updater.json "$GITHUB_WORKSPACE/builds/"
           fi
 
       - name: Push builds
