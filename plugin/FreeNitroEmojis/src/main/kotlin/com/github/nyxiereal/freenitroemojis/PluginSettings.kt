@@ -39,17 +39,6 @@ class PluginSettings(
         var selectedFormat = settingsAPI.getString(FORMAT_TYPE_KEY, FORMAT_TYPE_DEFAULT)
         
         val radioButtons = mutableListOf<CheckedSetting>()
-        val createRadioListener: (MutableList<CheckedSetting>) -> (Boolean) -> Unit = { buttons ->
-            { isChecked ->
-                if (isChecked) {
-                    buttons.forEach { button ->
-                        if (button.isChecked) {
-                            button.isChecked = false
-                        }
-                    }
-                }
-            }
-        }
 
         formatOptions.forEach { (label, value) ->
             val radio = Utils.createCheckedSetting(
@@ -59,10 +48,16 @@ class PluginSettings(
                 null
             ).apply {
                 isChecked = value == selectedFormat
-                setOnCheckedListener { isChecked ->
-                    if (isChecked) {
-                        selectedFormat = value
-                        createRadioListener(radioButtons)(true)
+            }
+
+            radio.setOnCheckedListener { isChecked ->
+                if (isChecked) {
+                    selectedFormat = value
+                    // Uncheck all other radio buttons
+                    radioButtons.forEach { button ->
+                        if (button != radio) {
+                            button.isChecked = false
+                        }
                     }
                 }
             }
