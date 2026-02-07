@@ -106,9 +106,10 @@ class FreeNitroEmojis : Plugin() {
                     val isFake = it.groupValues[2] == "F_"
                     if (!isFake) return@replace it.value
 
+                    val isAnimated = it.groupValues[1].isNotEmpty()
                     val emojiName = it.groupValues[3]
                     val emojiId = it.groupValues[4]
-                    val emojiExtension = "webp"
+                    val emojiExtension = if (isAnimated) "gif" else "png"
                     val emoteSize = settings.getString(EMOTE_SIZE_KEY, EMOTE_SIZE_DEFAULT).toIntOrNull()
                     "[$emojiName](https://cdn.discordapp.com/emojis/$emojiId.$emojiExtension?name=$emojiName&size=$emoteSize)"
                 }
@@ -147,7 +148,7 @@ class FreeNitroEmojis : Plugin() {
         finalUrl += idStr
         val emoteSize = settings.getString(EMOTE_SIZE_KEY, EMOTE_SIZE_DEFAULT).toIntOrNull()
 
-        finalUrl += ".webp?name=$emoteName"
+        finalUrl += if (isAnimated) ".gif?name=$emoteName" else ".png?name=$emoteName"
 
         if (emoteSize != null) {
             finalUrl += "&size=${emoteSize}"

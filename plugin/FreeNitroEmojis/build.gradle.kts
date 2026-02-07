@@ -1,4 +1,4 @@
-version = "1.1.1"
+version = "1.1.2"
 
 description =
         "Use custom emojis without Nitro"
@@ -8,6 +8,9 @@ aliucord {
     author("nyxiereal", 1242567443742986373L)
 
     changelog.set("""
+        # 1.1.2
+        - Fixed animated emojis not working
+
         # 1.1.1
         - Fixed plugin settings not working
 
