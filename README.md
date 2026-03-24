@@ -11,7 +11,7 @@ Some plugins are no longer maintained by their original authors, and may cause p
 ## ViewQuests
 Allows you to view discord quests directly in the user settings.
 
-## ShowNitroEmojis
+## FreeNitroEmojis
 > [!TIP]
 > This plugin has been forked due to the original maintainer no longer being active.  
 
