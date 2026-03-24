@@ -11,18 +11,6 @@ Some plugins are no longer maintained by their original authors, and may cause p
 ## ViewQuests
 Allows you to view discord quests directly in the user settings.
 
-## ShowHiddenChannels
-> [!TIP]
-> This plugin has been forked due to the original maintainer no longer being active.  
-
-Originally by Juby210, with chanes made by Xinto. Allows you to see hidden channels in servers.
-
-## LayoutController
-> [!TIP]
-> This plugin has been forked due to the original maintainer no longer being active.  
-
-Originally by Zoot, Animal, and Diamond, with changes made by Xinto. Adds many layout customization options.
-
 ## ShowNitroEmojis
 > [!TIP]
 > This plugin has been forked due to the original maintainer no longer being active.  
