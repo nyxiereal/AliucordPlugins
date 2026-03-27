@@ -17,49 +17,51 @@ import com.lytefast.flexinput.R
 data class QuestsResponse(val quests: List<Quest>)
 
 data class Quest(
-        val config: QuestConfig,
-        @SerializedName("user_status") val userStatus: QuestUserStatus? = null
+    val config: QuestConfig,
+    @SerializedName("user_status") val userStatus: QuestUserStatus? = null
 )
 
 data class QuestConfig(
-        @SerializedName("starts_at") val startsAt: String,
-        @SerializedName("expires_at") val expiresAt: String,
-        val messages: QuestMessages,
-        @SerializedName("task_config") val taskConfig: QuestTaskConfig,
-        @SerializedName("rewards_config") val rewardsConfig: QuestRewardsConfig
+    @SerializedName("starts_at") val startsAt: String,
+    @SerializedName("expires_at") val expiresAt: String,
+    val messages: QuestMessages,
+    @SerializedName("task_config") val taskConfig: QuestTaskConfig,
+    @SerializedName("rewards_config") val rewardsConfig: QuestRewardsConfig
 )
 
 data class QuestMessages(
-        @SerializedName("quest_name") val questName: String,
-        @SerializedName("game_title") val gameTitle: String,
-        @SerializedName("game_publisher") val gamePublisher: String
+    @SerializedName("quest_name") val questName: String,
+    @SerializedName("game_title") val gameTitle: String,
+    @SerializedName("game_publisher") val gamePublisher: String
 )
 
 data class QuestTaskConfig(val tasks: Map<String, QuestTask>)
 
 data class QuestTask(
-        @SerializedName("event_name") val eventName: String,
-        val target: Int,
-        val title: String? = null
+    @SerializedName("event_name") val eventName: String,
+    val target: Int,
+    val title: String? = null
 )
 
 data class QuestRewardsConfig(val rewards: List<QuestReward>)
 
 data class QuestReward(val type: Int, val messages: QuestRewardMessages)
 
-data class QuestRewardMessages(@SerializedName("name_with_article") val nameWithArticle: String)
+data class QuestRewardMessages(
+    @SerializedName("name_with_article") val nameWithArticle: String
+)
 
 data class QuestUserStatus(
-        @SerializedName("enrolled_at") val enrolledAt: String? = null,
-        @SerializedName("completed_at") val completedAt: String? = null,
-        @SerializedName("claimed_at") val claimedAt: String? = null,
-        val progress: Map<String, QuestTaskProgress>? = null
+    @SerializedName("enrolled_at") val enrolledAt: String? = null,
+    @SerializedName("completed_at") val completedAt: String? = null,
+    @SerializedName("claimed_at") val claimedAt: String? = null,
+    val progress: Map<String, QuestTaskProgress>? = null
 )
 
 data class QuestTaskProgress(
-        @SerializedName("event_name") val eventName: String,
-        val value: Int,
-        @SerializedName("completed_at") val completedAt: String? = null
+    @SerializedName("event_name") val eventName: String,
+    val value: Int,
+    @SerializedName("completed_at") val completedAt: String? = null
 )
 
 class QuestsPage : SettingsPage() {
@@ -78,12 +80,13 @@ class QuestsPage : SettingsPage() {
                 null
             )
             setOnClickListener { Utils.openPageWithProxy(context, CollectiblesPage()) }
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, DimenUtils.dpToPx(16))
-            }
+            layoutParams = LinearLayout
+                .LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, 0, 0, DimenUtils.dpToPx(16))
+                }
             linearLayout.addView(this)
         }
     }
@@ -171,9 +174,9 @@ class QuestsPage : SettingsPage() {
     }
 
     private fun addTaskInfo(
-            context: Context,
-            taskConfig: QuestTaskConfig,
-            container: LinearLayout
+        context: Context,
+        taskConfig: QuestTaskConfig,
+        container: LinearLayout
     ) {
         createLabelTextView(
             context,
@@ -191,9 +194,9 @@ class QuestsPage : SettingsPage() {
     }
 
     private fun addRewardInfo(
-            context: Context,
-            rewardsConfig: QuestRewardsConfig,
-            container: LinearLayout
+        context: Context,
+        rewardsConfig: QuestRewardsConfig,
+        container: LinearLayout
     ) {
         createLabelTextView(
             context,
@@ -212,9 +215,9 @@ class QuestsPage : SettingsPage() {
     }
 
     private fun addStatusInfo(
-            context: Context,
-            userStatus: QuestUserStatus,
-            container: LinearLayout
+        context: Context,
+        userStatus: QuestUserStatus,
+        container: LinearLayout
     ) {
         val statusText = when {
             userStatus.claimedAt != null -> "Status: Claimed"
@@ -222,7 +225,7 @@ class QuestsPage : SettingsPage() {
             userStatus.enrolledAt != null -> "Status: In Progress"
             else -> "Status: Unknown"
         }
-        
+
         createLabelTextView(
             context,
             statusText,
@@ -246,10 +249,10 @@ class QuestsPage : SettingsPage() {
     }
 
     private fun addDateInfo(
-            context: Context,
-            startsAt: String,
-            expiresAt: String,
-            container: LinearLayout
+        context: Context,
+        startsAt: String,
+        expiresAt: String,
+        container: LinearLayout
     ) {
         createSubTextView(
             context,
@@ -258,44 +261,70 @@ class QuestsPage : SettingsPage() {
         ).apply { container.addView(this) }
     }
 
-    private fun getTaskDescription(task: QuestTask): String =
-            when (task.eventName) {
-                "STREAM_ON_DESKTOP" -> "Stream for ${formatDuration(task.target)}"
-                "PLAY_ON_DESKTOP", "PLAY_ON_DESKTOP_V2" -> "Play for ${formatDuration(task.target)}"
-                "PLAY_ON_XBOX" -> "Play on Xbox for ${formatDuration(task.target)}"
-                "PLAY_ON_PLAYSTATION" -> "Play on PlayStation for ${formatDuration(task.target)}"
-                "WATCH_VIDEO" -> "Watch video for ${formatDuration(task.target)}"
-                "WATCH_VIDEO_ON_MOBILE" ->
-                        "Watch video on mobile for ${formatDuration(task.target)}"
-                "PLAY_ACTIVITY" -> "Play activity for ${formatDuration(task.target)}"
-                else -> task.title ?: task.eventName
-            }
+    private fun getTaskDescription(task: QuestTask): String = when (task.eventName) {
+        "STREAM_ON_DESKTOP" -> {
+            "Stream for ${formatDuration(task.target)}"
+        }
+
+        "PLAY_ON_DESKTOP", "PLAY_ON_DESKTOP_V2" -> {
+            "Play for ${formatDuration(task.target)}"
+        }
+
+        "PLAY_ON_XBOX" -> {
+            "Play on Xbox for ${formatDuration(task.target)}"
+        }
+
+        "PLAY_ON_PLAYSTATION" -> {
+            "Play on PlayStation for ${formatDuration(task.target)}"
+        }
+
+        "WATCH_VIDEO" -> {
+            "Watch video for ${formatDuration(task.target)}"
+        }
+
+        "WATCH_VIDEO_ON_MOBILE" -> {
+            "Watch video on mobile for ${formatDuration(task.target)}"
+        }
+
+        "PLAY_ACTIVITY" -> {
+            "Play activity for ${formatDuration(task.target)}"
+        }
+
+        else -> {
+            task.title ?: task.eventName
+        }
+    }
 
     private fun formatDuration(seconds: Int): String {
         val minutes = seconds / 60
         return when {
-            minutes < 60 -> "$minutes minutes"
+            minutes < 60 -> {
+                "$minutes minutes"
+            }
+
             else -> {
                 val hours = minutes / 60
                 val remainingMinutes = minutes % 60
-                if (remainingMinutes > 0) "$hours hours $remainingMinutes minutes"
-                else "$hours hours"
+                if (remainingMinutes > 0) {
+                    "$hours hours $remainingMinutes minutes"
+                } else {
+                    "$hours hours"
+                }
             }
         }
     }
 
-    private fun getRewardType(type: Int): String =
-            when (type) {
-                1 -> "Reward Code"
-                2 -> "In-Game Item"
-                3 -> "Collectible"
-                4 -> "Discord Orbs"
-                5 -> "Fractional Premium"
-                else -> "Unknown"
-            }
+    private fun getRewardType(type: Int): String = when (type) {
+        1 -> "Reward Code"
+        2 -> "In-Game Item"
+        3 -> "Collectible"
+        4 -> "Discord Orbs"
+        5 -> "Fractional Premium"
+        else -> "Unknown"
+    }
 
     private fun formatProgressValue(value: Int): String =
-            if (value >= 60) "${value / 60} minutes" else "$value seconds"
+        if (value >= 60) "${value / 60} minutes" else "$value seconds"
 
     private fun formatDate(context: Context, isoDate: String): String {
         return try {

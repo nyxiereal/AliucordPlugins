@@ -1,16 +1,18 @@
 [versions]
 aliucord = "2.6.0"
 aliucord-gradle = "2.3.0"
+aliuhook = "1.1.4"
 android = "8.13.2"
 discord = "126021"
-kotlin = "2.3.0"
+kotlin = "2.3.20"
 #noinspection GradleDependency
 kotlin-stdlib = "1.5.21"
-ktlint = "1.8.0"
-ktlint-plugin = "14.0.1"
+ktlint-plugin = "14.2.0"
+ktlint= "1.8.0"
 
 [libraries]
 aliucord = { module = "com.aliucord:Aliucord", version.ref = "aliucord" }
+aliuhook = { module = "com.aliucord:Aliuhook", version.ref = "aliuhook" }
 discord = { module = "com.discord:discord", version.ref = "discord" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin-stdlib" }
 

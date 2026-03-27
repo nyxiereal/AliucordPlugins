@@ -1,4 +1,4 @@
-version = "1.1.2"
+version = "1.2.0"
 
 description =
         "Use custom emojis without Nitro"
@@ -8,6 +8,13 @@ aliucord {
     author("nyxiereal", 1242567443742986373L)
 
     changelog.set("""
+        # 1.2.0
+        - Added support for WebP emojis (animated+static). DISABLE IF YOU ENCOUNTER ISSUES!!!
+        - Removed support for zero-width space format due to it being very buggy
+        - Improved wording in settings
+        - Improved realmoji support
+        thanks fwt for testing!
+
         # 1.1.2
         - Fixed animated emojis not working
 

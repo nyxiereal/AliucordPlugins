@@ -33,13 +33,10 @@ fun createTextView(
     )
 }
 
-fun createHeaderTextView(
-    context: Context,
-    text: String,
-    paddingDp: Padding = Padding()
-): TextView = createTextView(context, R.i.UiKit_Settings_Item_Header, text, paddingDp).apply {
-    typeface = getCachedFont(context, Constants.Fonts.whitney_semibold)
-}
+fun createHeaderTextView(context: Context, text: String, paddingDp: Padding = Padding()): TextView =
+    createTextView(context, R.i.UiKit_Settings_Item_Header, text, paddingDp).apply {
+        typeface = getCachedFont(context, Constants.Fonts.whitney_semibold)
+    }
 
 fun createSubTextView(
     context: Context,
@@ -50,13 +47,10 @@ fun createSubTextView(
     if (color != null) setTextColor(color)
 }
 
-fun createLabelTextView(
-    context: Context,
-    text: String,
-    paddingDp: Padding = Padding()
-): TextView = createTextView(context, R.i.UiKit_Settings_Item_Label, text, paddingDp).apply {
-    typeface = getCachedFont(context, Constants.Fonts.whitney_semibold)
-}
+fun createLabelTextView(context: Context, text: String, paddingDp: Padding = Padding()): TextView =
+    createTextView(context, R.i.UiKit_Settings_Item_Label, text, paddingDp).apply {
+        typeface = getCachedFont(context, Constants.Fonts.whitney_semibold)
+    }
 
 fun createCard(context: Context, padding: Int = 8): LinearLayout = LinearLayout(context).apply {
     orientation = LinearLayout.VERTICAL
@@ -64,17 +58,18 @@ fun createCard(context: Context, padding: Int = 8): LinearLayout = LinearLayout(
         setColor(Color.parseColor("#2F3136"))
         cornerRadius = DimenUtils.dpToPx(8).toFloat()
     }
-    layoutParams = LinearLayout.LayoutParams(
-        LinearLayout.LayoutParams.MATCH_PARENT,
-        LinearLayout.LayoutParams.WRAP_CONTENT
-    ).apply {
-        setMargins(
-            DimenUtils.dpToPx(4),
-            DimenUtils.dpToPx(2),
-            DimenUtils.dpToPx(4),
-            DimenUtils.dpToPx(2)
-        )
-    }
+    layoutParams = LinearLayout
+        .LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            setMargins(
+                DimenUtils.dpToPx(4),
+                DimenUtils.dpToPx(2),
+                DimenUtils.dpToPx(4),
+                DimenUtils.dpToPx(2)
+            )
+        }
     setPadding(0, 0, 0, DimenUtils.dpToPx(padding))
 }
 

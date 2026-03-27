@@ -11,42 +11,42 @@ import com.aliucord.annotations.AliucordPlugin
 import com.aliucord.entities.Plugin
 import com.aliucord.patcher.Hook
 import com.discord.widgets.settings.WidgetSettings
-import com.lytefast.flexinput.R
 import com.github.nyxiereal.viewquests.*
+import com.lytefast.flexinput.R
 
 @AliucordPlugin
 class ViewQuests : Plugin() {
     override fun start(context: Context) {
         // Add quest entry to the menu
         patcher.patch(
-                WidgetSettings::class.java.getDeclaredMethod("onViewBound", View::class.java),
-                Hook { callFrame ->
-                    val view = callFrame.args[0] as CoordinatorLayout
-                    val layout =
-                            (view.getChildAt(1) as NestedScrollView).getChildAt(0) as
-                                    LinearLayoutCompat
-                    val ctx = layout.context
+            WidgetSettings::class.java.getDeclaredMethod("onViewBound", View::class.java),
+            Hook { callFrame ->
+                val view = callFrame.args[0] as CoordinatorLayout
+                val layout =
+                    (view.getChildAt(1) as NestedScrollView).getChildAt(0) as
+                        LinearLayoutCompat
+                val ctx = layout.context
 
                 val baseIndex =
-                            layout.indexOfChild(
-                                    layout.findViewById<TextView>(
-                                            Utils.getResId("qr_scanner", "id")
-                                    )
-                            )
-
-                    // Add the menu entry
-                    TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Icon).apply {
-                        text = "Quests"
-                        setCompoundDrawablesWithIntrinsicBounds(
-                                Utils.tintToTheme(ctx.getDrawable(R.e.ic_gift_24dp)),
-                                null,
-                                null,
-                                null
+                    layout.indexOfChild(
+                        layout.findViewById<TextView>(
+                            Utils.getResId("qr_scanner", "id")
                         )
-                        setOnClickListener { Utils.openPageWithProxy(ctx, QuestsPage()) }
-                        layout.addView(this, baseIndex + 1)
-                    }
+                    )
+
+                // Add the menu entry
+                TextView(ctx, null, 0, R.i.UiKit_Settings_Item_Icon).apply {
+                    text = "Quests"
+                    setCompoundDrawablesWithIntrinsicBounds(
+                        Utils.tintToTheme(ctx.getDrawable(R.e.ic_gift_24dp)),
+                        null,
+                        null,
+                        null
+                    )
+                    setOnClickListener { Utils.openPageWithProxy(ctx, QuestsPage()) }
+                    layout.addView(this, baseIndex + 1)
                 }
+            }
         )
     }
 

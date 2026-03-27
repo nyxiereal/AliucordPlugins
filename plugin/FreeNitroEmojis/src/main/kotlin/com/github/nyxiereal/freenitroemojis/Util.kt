@@ -14,7 +14,10 @@ const val COMPOUND_SENTENCES_KEY = "compound_sentences"
 const val FORMAT_URL = "url"
 const val FORMAT_EXT_MD = "markdown_ext"
 const val FORMAT_MD = "markdown"
-const val FORMAT_ZW_SPACE = "zerowidth"
+
+// WebP settings
+const val USE_WEBP_KEY = "use_webp"
+const val USE_WEBP_DEFAULT = false
 
 // Realmoji defaults
 const val REALMOJI_DEFAULT = false

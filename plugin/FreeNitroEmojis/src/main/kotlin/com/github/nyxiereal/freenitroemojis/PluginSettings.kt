@@ -10,10 +10,7 @@ import com.aliucord.views.Button
 import com.aliucord.views.TextInput
 import com.discord.views.CheckedSetting
 
-class PluginSettings(
-    private val settingsAPI: SettingsAPI
-) : SettingsPage() {
-
+class PluginSettings(private val settingsAPI: SettingsAPI) : SettingsPage() {
     @SuppressLint("SetTextI18n")
     override fun onViewBound(view: View) {
         super.onViewBound(view)
@@ -32,23 +29,23 @@ class PluginSettings(
         val formatOptions = listOf(
             "URL" to FORMAT_URL,
             "Extended markdown [\u2236name\u2236](url)" to FORMAT_EXT_MD,
-            "Markdown [name](url)" to FORMAT_MD,
-            "Zero-width space [\u200b](url)" to FORMAT_ZW_SPACE
+            "Markdown [name](url)" to FORMAT_MD
         )
-        
+
         var selectedFormat = settingsAPI.getString(FORMAT_TYPE_KEY, FORMAT_TYPE_DEFAULT)
-        
+
         val radioButtons = mutableListOf<CheckedSetting>()
 
         formatOptions.forEach { (label, value) ->
-            val radio = Utils.createCheckedSetting(
-                context,
-                CheckedSetting.ViewType.RADIO,
-                label,
-                null
-            ).apply {
-                isChecked = value == selectedFormat
-            }
+            val radio = Utils
+                .createCheckedSetting(
+                    context,
+                    CheckedSetting.ViewType.RADIO,
+                    label,
+                    null
+                ).apply {
+                    isChecked = value == selectedFormat
+                }
 
             radio.setOnCheckedListener { isChecked ->
                 if (isChecked) {
@@ -65,25 +62,35 @@ class PluginSettings(
             radioButtons.add(radio)
         }
 
-        // Realmoji toggle
-        val realmojiToggle = Utils.createCheckedSetting(
-            context,
-            CheckedSetting.ViewType.CHECK,
-            "Enable Realmojis",
-            "Converts markdown emoji back to Discord format for proper display"
-        ).apply {
-            isChecked = settingsAPI.getBool(REALMOJI_KEY, REALMOJI_DEFAULT)
-        }
+        val realmojiToggle = Utils
+            .createCheckedSetting(
+                context,
+                CheckedSetting.ViewType.CHECK,
+                "Enable realmojis",
+                "Makes your Discord client think freenitro emojis are nitro emojis"
+            ).apply {
+                isChecked = settingsAPI.getBool(REALMOJI_KEY, REALMOJI_DEFAULT)
+            }
 
-        // Compound sentences toggle (only relevant when realmojis are enabled)
-        val compoundSentencesToggle = Utils.createCheckedSetting(
-            context,
-            CheckedSetting.ViewType.CHECK,
-            "Allow emoji in compound sentences",
-            "When enabled, emoji will work in sentences. When disabled, only standalone emoji messages will work"
-        ).apply {
-            isChecked = settingsAPI.getBool(COMPOUND_SENTENCES_KEY, COMPOUND_SENTENCES_DEFAULT)
-        }
+        val compoundSentencesToggle = Utils
+            .createCheckedSetting(
+                context,
+                CheckedSetting.ViewType.CHECK,
+                "Enable realmojis in compound sentences",
+                "Self explanatory, allows for messages like 'hello :sogged: meow' to display properly"
+            ).apply {
+                isChecked = settingsAPI.getBool(COMPOUND_SENTENCES_KEY, COMPOUND_SENTENCES_DEFAULT)
+            }
+
+        val webpToggle = Utils
+            .createCheckedSetting(
+                context,
+                CheckedSetting.ViewType.CHECK,
+                "Use WebP format",
+                "Use WebP for all emojis instead of GIF for animated emojis and PNG for static emojis. Disable if you experience issues with animated emojis not animating."
+            ).apply {
+                isChecked = settingsAPI.getBool(USE_WEBP_KEY, USE_WEBP_DEFAULT)
+            }
 
         val saveButton = Button(context).apply {
             text = "Save"
@@ -92,7 +99,8 @@ class PluginSettings(
                 settingsAPI.setString(FORMAT_TYPE_KEY, selectedFormat)
                 settingsAPI.setBool(REALMOJI_KEY, realmojiToggle.isChecked)
                 settingsAPI.setBool(COMPOUND_SENTENCES_KEY, compoundSentencesToggle.isChecked)
-                Utils.showToast("Successfully saved!")
+                settingsAPI.setBool(USE_WEBP_KEY, webpToggle.isChecked)
+                Utils.showToast("Settings saved!")
                 close()
             }
         }
@@ -101,6 +109,7 @@ class PluginSettings(
         radioButtons.forEach { addView(it) }
         addView(realmojiToggle)
         addView(compoundSentencesToggle)
+        addView(webpToggle)
         addView(saveButton)
     }
 }

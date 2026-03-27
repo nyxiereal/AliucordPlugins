@@ -12,39 +12,39 @@ import com.aliucord.fragments.SettingsPage
 import com.aliucord.utils.SerializedName
 
 data class CollectiblePurchase(
-        @SerializedName("sku_id") val skuId: String,
-        val name: String,
-        val summary: String,
-        @SerializedName("store_listing_id") val storeListingId: String,
-        @SerializedName("unpublished_at") val unpublishedAt: String? = null,
-        val styles: CollectibleStyles? = null,
-        val items: List<CollectibleItem>? = null,
-        val type: Int,
-        @SerializedName("premium_type") val premiumType: Int,
-        @SerializedName("category_sku_id") val categorySkuId: String,
-        @SerializedName("purchase_type") val purchaseType: Int,
-        @SerializedName("purchased_at") val purchasedAt: String,
-        @SerializedName("expires_at") val expiresAt: String? = null
+    @SerializedName("sku_id") val skuId: String,
+    val name: String,
+    val summary: String,
+    @SerializedName("store_listing_id") val storeListingId: String,
+    @SerializedName("unpublished_at") val unpublishedAt: String? = null,
+    val styles: CollectibleStyles? = null,
+    val items: List<CollectibleItem>? = null,
+    val type: Int,
+    @SerializedName("premium_type") val premiumType: Int,
+    @SerializedName("category_sku_id") val categorySkuId: String,
+    @SerializedName("purchase_type") val purchaseType: Int,
+    @SerializedName("purchased_at") val purchasedAt: String,
+    @SerializedName("expires_at") val expiresAt: String? = null
 )
 
 data class CollectibleStyles(
-        @SerializedName("background_colors") val backgroundColors: List<Int>? = null,
-        @SerializedName("button_colors") val buttonColors: List<Int>? = null,
-        @SerializedName("confetti_colors") val confettiColors: List<Int>? = null
+    @SerializedName("background_colors") val backgroundColors: List<Int>? = null,
+    @SerializedName("button_colors") val buttonColors: List<Int>? = null,
+    @SerializedName("confetti_colors") val confettiColors: List<Int>? = null
 )
 
 data class CollectibleItem(
-        val type: Int,
-        val id: String,
-        @SerializedName("sku_id") val skuId: String,
-        val asset: String,
-        val assets: CollectibleAssets? = null,
-        val label: String
+    val type: Int,
+    val id: String,
+    @SerializedName("sku_id") val skuId: String,
+    val asset: String,
+    val assets: CollectibleAssets? = null,
+    val label: String
 )
 
 data class CollectibleAssets(
-        @SerializedName("static_image_url") val staticImageUrl: String? = null,
-        @SerializedName("animated_image_url") val animatedImageUrl: String? = null
+    @SerializedName("static_image_url") val staticImageUrl: String? = null,
+    @SerializedName("animated_image_url") val animatedImageUrl: String? = null
 )
 
 class CollectiblesPage : SettingsPage() {
@@ -59,7 +59,10 @@ class CollectiblesPage : SettingsPage() {
         // Fetch collectibles from Discord in a background thread
         Utils.threadPool.execute {
             try {
-                val req = Http.Request.newDiscordRNRequest("/users/@me/collectibles-purchases", "GET")
+                val req = Http.Request.newDiscordRNRequest(
+                    "/users/@me/collectibles-purchases",
+                    "GET"
+                )
                 val res = req.execute()
                 val collectibles = res.json(Array<CollectiblePurchase>::class.java).toList()
 
@@ -70,7 +73,9 @@ class CollectiblesPage : SettingsPage() {
                     if (collectibles.isEmpty()) {
                         addNoCollectiblesView(context)
                     } else {
-                        collectibles.forEach { collectible -> addCollectibleCard(context, collectible) }
+                        collectibles.forEach { collectible ->
+                            addCollectibleCard(context, collectible)
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -138,21 +143,23 @@ class CollectiblesPage : SettingsPage() {
     }
 
     private fun addTypeInfo(
-            context: Context,
-            collectible: CollectiblePurchase,
-            container: LinearLayout
+        context: Context,
+        collectible: CollectiblePurchase,
+        container: LinearLayout
     ) {
         createLabelTextView(
             context,
-            "Type: ${getCollectibleType(collectible.type)} • ${getPurchaseType(collectible.purchaseType)}",
+            "Type: ${getCollectibleType(
+                collectible.type
+            )} • ${getPurchaseType(collectible.purchaseType)}",
             Padding(16, 8, 16, 4)
         ).apply { container.addView(this) }
     }
 
     private fun addItemsInfo(
-            context: Context,
-            items: List<CollectibleItem>,
-            container: LinearLayout
+        context: Context,
+        items: List<CollectibleItem>,
+        container: LinearLayout
     ) {
         if (items.isNotEmpty()) {
             createLabelTextView(
@@ -172,10 +179,10 @@ class CollectiblesPage : SettingsPage() {
     }
 
     private fun addDateInfo(
-            context: Context,
-            purchasedAt: String,
-            expiresAt: String?,
-            container: LinearLayout
+        context: Context,
+        purchasedAt: String,
+        expiresAt: String?,
+        container: LinearLayout
     ) {
         val expiryText = if (expiresAt != null) {
             "Expires: ${formatDate(context, expiresAt)}"
@@ -189,19 +196,17 @@ class CollectiblesPage : SettingsPage() {
         ).apply { container.addView(this) }
     }
 
-    private fun getCollectibleType(type: Int): String =
-            when (type) {
-                0 -> "Avatar Decoration"
-                1 -> "Profile Effect"
-                2 -> "Bundle"
-                3000 -> "Badge"
-                else -> "Unknown ($type)"
-            }
+    private fun getCollectibleType(type: Int): String = when (type) {
+        0 -> "Avatar Decoration"
+        1 -> "Profile Effect"
+        2 -> "Bundle"
+        3000 -> "Badge"
+        else -> "Unknown ($type)"
+    }
 
-    private fun getPurchaseType(type: Int): String =
-            when (type) {
-                1 -> "Direct Purchase"
-                10 -> "Quest Reward"
-                else -> "Unknown Purchase Type"
-            }
+    private fun getPurchaseType(type: Int): String = when (type) {
+        1 -> "Direct Purchase"
+        10 -> "Quest Reward"
+        else -> "Unknown Purchase Type"
+    }
 }
