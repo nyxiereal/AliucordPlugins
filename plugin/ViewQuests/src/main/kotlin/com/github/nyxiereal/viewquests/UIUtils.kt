@@ -65,9 +65,9 @@ fun createCard(context: Context, padding: Int = 8): LinearLayout = LinearLayout(
         ).apply {
             setMargins(
                 DimenUtils.dpToPx(4),
-                DimenUtils.dpToPx(2),
                 DimenUtils.dpToPx(4),
-                DimenUtils.dpToPx(2)
+                DimenUtils.dpToPx(4),
+                DimenUtils.dpToPx(8)
             )
         }
     setPadding(0, 0, 0, DimenUtils.dpToPx(padding))

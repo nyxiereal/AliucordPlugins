@@ -1,13 +1,11 @@
 package com.github.nyxiereal.freenitroemojis
 
 import android.annotation.SuppressLint
-import android.text.InputType
 import android.view.View
 import com.aliucord.Utils
 import com.aliucord.api.SettingsAPI
 import com.aliucord.fragments.SettingsPage
 import com.aliucord.views.Button
-import com.aliucord.views.TextInput
 import com.discord.views.CheckedSetting
 
 class PluginSettings(private val settingsAPI: SettingsAPI) : SettingsPage() {
@@ -17,13 +15,6 @@ class PluginSettings(private val settingsAPI: SettingsAPI) : SettingsPage() {
 
         val context = requireContext()
         setActionBarTitle("FreeNitroEmojis")
-
-        val textInput = TextInput(context).apply {
-            setHint("Fallback emote size (48 is the default)")
-            editText.setText(settingsAPI.getString(EMOTE_SIZE_KEY, EMOTE_SIZE_DEFAULT).toString())
-            editText.inputType = InputType.TYPE_CLASS_NUMBER
-            editText.maxLines = 1
-        }
 
         // Format type selection
         val formatOptions = listOf(
@@ -95,7 +86,6 @@ class PluginSettings(private val settingsAPI: SettingsAPI) : SettingsPage() {
         val saveButton = Button(context).apply {
             text = "Save"
             setOnClickListener {
-                settingsAPI.setString(EMOTE_SIZE_KEY, textInput.editText.text.toString())
                 settingsAPI.setString(FORMAT_TYPE_KEY, selectedFormat)
                 settingsAPI.setBool(REALMOJI_KEY, realmojiToggle.isChecked)
                 settingsAPI.setBool(COMPOUND_SENTENCES_KEY, compoundSentencesToggle.isChecked)
@@ -105,7 +95,6 @@ class PluginSettings(private val settingsAPI: SettingsAPI) : SettingsPage() {
             }
         }
 
-        addView(textInput)
         radioButtons.forEach { addView(it) }
         addView(realmojiToggle)
         addView(compoundSentencesToggle)

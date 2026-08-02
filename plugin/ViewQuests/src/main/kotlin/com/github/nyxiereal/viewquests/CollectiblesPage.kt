@@ -2,14 +2,21 @@ package com.github.nyxiereal.viewquests
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import com.aliucord.Http
 import com.aliucord.Logger
 import com.aliucord.Utils
 import com.aliucord.fragments.SettingsPage
+import com.aliucord.utils.DimenUtils
 import com.aliucord.utils.SerializedName
+import com.discord.utilities.time.TimeUtils
+import com.facebook.drawee.view.SimpleDraweeView
+import com.lytefast.flexinput.R
 
 data class CollectiblePurchase(
     @SerializedName("sku_id") val skuId: String,
@@ -73,9 +80,13 @@ class CollectiblesPage : SettingsPage() {
                     if (collectibles.isEmpty()) {
                         addNoCollectiblesView(context)
                     } else {
-                        collectibles.forEach { collectible ->
-                            addCollectibleCard(context, collectible)
-                        }
+                        collectibles
+                            .sortedByDescending { collectible ->
+                                runCatching { TimeUtils.parseUTCDate(collectible.purchasedAt) }
+                                    .getOrDefault(0L)
+                            }.forEach { collectible ->
+                                addCollectibleCard(context, collectible)
+                            }
                     }
                 }
             } catch (e: Exception) {
@@ -112,89 +123,111 @@ class CollectiblesPage : SettingsPage() {
     }
 
     private fun addCollectibleCard(context: Context, collectible: CollectiblePurchase) {
-        val cardContainer = createCard(context, 8)
+        val cardContainer = createCard(context, 12)
+        addCollectiblePreview(context, collectible, cardContainer)
 
-        // Title
         createHeaderTextView(
             context,
             collectible.name,
-            Padding(16, 16, 16, 8)
+            Padding(16, 14, 16, 4)
         ).apply { cardContainer.addView(this) }
 
-        // Summary
         createSubTextView(
             context,
             collectible.summary,
-            Padding(16, 4, 16, 12)
+            Padding(16, 2, 16, 10)
         ).apply { cardContainer.addView(this) }
 
-        // Type information
-        addTypeInfo(context, collectible, cardContainer)
+        createLabelTextView(
+            context,
+            "${getCollectibleType(
+                collectible.type
+            )}  •  ${getPurchaseType(collectible.purchaseType)}",
+            Padding(16, 6, 16, 6)
+        ).apply { cardContainer.addView(this) }
 
-        // Items
-        if (!collectible.items.isNullOrEmpty()) {
-            addItemsInfo(context, collectible.items, cardContainer)
+        collectible.items.orEmpty().forEach { item ->
+            createSubTextView(
+                context,
+                item.label,
+                Padding(16, 4, 16, 6)
+            ).apply { cardContainer.addView(this) }
         }
 
-        // Purchase and expiry dates
-        addDateInfo(context, collectible.purchasedAt, collectible.expiresAt, cardContainer)
+        val expiry = collectible.expiresAt
+            ?.let {
+                " • Expires ${formatDate(
+                    context,
+                    it
+                )}"
+            }.orEmpty()
+        createSubTextView(
+            context,
+            "Purchased ${formatDate(context, collectible.purchasedAt)}$expiry",
+            Padding(16, 10, 16, 2),
+            Color.parseColor("#B5BAC1")
+        ).apply { cardContainer.addView(this) }
 
         linearLayout.addView(cardContainer)
     }
 
-    private fun addTypeInfo(
+    private fun addCollectiblePreview(
         context: Context,
         collectible: CollectiblePurchase,
         container: LinearLayout
     ) {
-        createLabelTextView(
-            context,
-            "Type: ${getCollectibleType(
-                collectible.type
-            )} • ${getPurchaseType(collectible.purchaseType)}",
-            Padding(16, 8, 16, 4)
-        ).apply { container.addView(this) }
-    }
+        val colors = collectible.styles?.backgroundColors.orEmpty()
+        val preview = FrameLayout(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                DimenUtils.dpToPx(118)
+            )
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                if (colors.size >= 2) {
+                    intArrayOf(colors[0].withOpaqueAlpha(), colors[1].withOpaqueAlpha())
+                } else {
+                    intArrayOf(Color.parseColor("#5865F2"), Color.parseColor("#3C45A5"))
+                }
+            ).apply { cornerRadius = DimenUtils.dpToPx(8).toFloat() }
+            clipToOutline = true
+        }
 
-    private fun addItemsInfo(
-        context: Context,
-        items: List<CollectibleItem>,
-        container: LinearLayout
-    ) {
-        if (items.isNotEmpty()) {
-            createLabelTextView(
-                context,
-                "Items:",
-                Padding(16, 12, 16, 4)
-            ).apply { container.addView(this) }
-
-            items.forEach { item ->
-                createSubTextView(
-                    context,
-                    "- ${item.label}",
-                    Padding(24, 2, 16, 2)
-                ).apply { container.addView(this) }
+        val item = collectible.items?.firstOrNull()
+        val imageUrl = item?.assets?.staticImageUrl
+            ?: item?.assets?.animatedImageUrl
+            ?: item?.asset?.takeIf { collectible.type == 0 }?.let {
+                "https://cdn.discordapp.com/avatar-decoration-presets/$it.png?size=240&passthrough=true"
             }
+        if (imageUrl != null) {
+            preview.addView(
+                SimpleDraweeView(context).apply {
+                    layoutParams = FrameLayout.LayoutParams(
+                        DimenUtils.dpToPx(104),
+                        DimenUtils.dpToPx(104),
+                        Gravity.CENTER
+                    )
+                    setImageURI(imageUrl)
+                }
+            )
+        } else {
+            preview.addView(
+                ImageView(context).apply {
+                    layoutParams = FrameLayout.LayoutParams(
+                        DimenUtils.dpToPx(52),
+                        DimenUtils.dpToPx(52),
+                        Gravity.CENTER
+                    )
+                    setImageDrawable(context.getDrawable(R.e.ic_gift_24dp))
+                    setColorFilter(Color.WHITE)
+                    alpha = 0.9f
+                }
+            )
         }
+        container.addView(preview)
     }
 
-    private fun addDateInfo(
-        context: Context,
-        purchasedAt: String,
-        expiresAt: String?,
-        container: LinearLayout
-    ) {
-        val expiryText = if (expiresAt != null) {
-            "Expires: ${formatDate(context, expiresAt)}"
-        } else {
-            "Expires: Never"
-        }
-        createSubTextView(
-            context,
-            "Purchased: ${formatDate(context, purchasedAt)}\n$expiryText",
-            Padding(16, 12, 16, 8)
-        ).apply { container.addView(this) }
-    }
+    private fun Int.withOpaqueAlpha(): Int = this or (0xFF shl 24)
 
     private fun getCollectibleType(type: Int): String = when (type) {
         0 -> "Avatar Decoration"

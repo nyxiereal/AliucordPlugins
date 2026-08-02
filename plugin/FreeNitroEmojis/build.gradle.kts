@@ -1,13 +1,18 @@
-version = "1.2.0"
+version = "1.2.1"
 
 description =
-        "Use custom emojis without Nitro"
+    "Use custom emojis without Nitro"
 
 aliucord {
     author("xinto", 423915768191647755L)
-    author("nyxiereal", 1242567443742986373L)
 
-    changelog.set("""
+    changelog.set(
+        """
+        # 1.2.1
+        - Fixed invalid custom emoji sizes by always requesting 48px emotes
+        - Fixed extended markdown realmoji parsing and live settings updates
+        - Improved realmoji hook safety and cleanup
+
         # 1.2.0
         - Added support for WebP emojis (animated+static). DISABLE IF YOU ENCOUNTER ISSUES!!!
         - Removed support for zero-width space format due to it being very buggy
@@ -28,6 +33,6 @@ aliucord {
         # 1.0.0
         - Initial release
         - Added emote size customization
-        """.trimIndent())
+        """.trimIndent()
+    )
 }
-

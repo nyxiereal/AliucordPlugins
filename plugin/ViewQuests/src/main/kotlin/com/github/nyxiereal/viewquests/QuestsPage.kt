@@ -2,92 +2,36 @@ package com.github.nyxiereal.viewquests
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
+import android.view.MenuItem
 import android.view.View
+import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
-import com.aliucord.Http
+import android.widget.TextView
 import com.aliucord.Logger
 import com.aliucord.Utils
 import com.aliucord.fragments.SettingsPage
 import com.aliucord.utils.DimenUtils
-import com.aliucord.utils.SerializedName
+import com.aliucord.utils.RxUtils.subscribe
+import com.discord.utilities.captcha.CaptchaHelper
 import com.discord.utilities.time.TimeUtils
+import com.facebook.drawee.view.SimpleDraweeView
 import com.lytefast.flexinput.R
-
-data class QuestsResponse(val quests: List<Quest>)
-
-data class Quest(
-    val config: QuestConfig,
-    @SerializedName("user_status") val userStatus: QuestUserStatus? = null
-)
-
-data class QuestConfig(
-    @SerializedName("starts_at") val startsAt: String,
-    @SerializedName("expires_at") val expiresAt: String,
-    val messages: QuestMessages,
-    @SerializedName("task_config") val taskConfig: QuestTaskConfig,
-    @SerializedName("rewards_config") val rewardsConfig: QuestRewardsConfig
-)
-
-data class QuestMessages(
-    @SerializedName("quest_name") val questName: String,
-    @SerializedName("game_title") val gameTitle: String,
-    @SerializedName("game_publisher") val gamePublisher: String
-)
-
-data class QuestTaskConfig(val tasks: Map<String, QuestTask>)
-
-data class QuestTask(
-    @SerializedName("event_name") val eventName: String,
-    val target: Int,
-    val title: String? = null
-)
-
-data class QuestRewardsConfig(val rewards: List<QuestReward>)
-
-data class QuestReward(val type: Int, val messages: QuestRewardMessages)
-
-data class QuestRewardMessages(
-    @SerializedName("name_with_article") val nameWithArticle: String
-)
-
-data class QuestUserStatus(
-    @SerializedName("enrolled_at") val enrolledAt: String? = null,
-    @SerializedName("completed_at") val completedAt: String? = null,
-    @SerializedName("claimed_at") val claimedAt: String? = null,
-    val progress: Map<String, QuestTaskProgress>? = null
-)
-
-data class QuestTaskProgress(
-    @SerializedName("event_name") val eventName: String,
-    val value: Int,
-    @SerializedName("completed_at") val completedAt: String? = null
-)
+import rx.Subscriber
 
 class QuestsPage : SettingsPage() {
     private val logger = Logger("ViewQuests")
 
     private fun addCollectiblesButton(context: Context) {
-        createHeaderTextView(
-            context,
-            "View Collectibles",
-            Padding(0, 0, 0, 16)
-        ).apply {
-            setCompoundDrawablesWithIntrinsicBounds(
-                Utils.tintToTheme(context.getDrawable(R.e.ic_gift_24dp)),
-                null,
-                null,
-                null
-            )
-            setOnClickListener { Utils.openPageWithProxy(context, CollectiblesPage()) }
-            layoutParams = LinearLayout
-                .LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    setMargins(0, 0, 0, DimenUtils.dpToPx(16))
-                }
-            linearLayout.addView(this)
+        headerBar.menu.add("Collectibles").apply {
+            icon = Utils.tintToTheme(context.getDrawable(R.e.ic_gift_24dp))
+            setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+            setOnMenuItemClickListener {
+                Utils.openPageWithProxy(context, CollectiblesPage())
+                true
+            }
         }
     }
 
@@ -103,9 +47,7 @@ class QuestsPage : SettingsPage() {
         // Fetch quests from discord in a background thread
         Utils.threadPool.execute {
             try {
-                val req = Http.Request.newDiscordRNRequest("/quests/@me", "GET")
-                val res = req.execute()
-                val questsResponse = res.json(QuestsResponse::class.java)
+                val questsResponse = QuestsApi.getQuests()
 
                 // Update UI on main thread
                 Utils.mainThread.post {
@@ -114,7 +56,9 @@ class QuestsPage : SettingsPage() {
                     if (questsResponse.quests.isEmpty()) {
                         addNoQuestsView(context)
                     } else {
-                        questsResponse.quests.forEach { quest -> addQuestCard(context, quest) }
+                        questsResponse.quests
+                            .sortedWith(questComparator())
+                            .forEach { quest -> addQuestCard(context, quest) }
                     }
                 }
             } catch (e: Exception) {
@@ -152,179 +96,475 @@ class QuestsPage : SettingsPage() {
 
     private fun addQuestCard(context: Context, quest: Quest) {
         val config = quest.config
-        val cardContainer = createCard(context, 8)
+        val cardContainer = createCard(context, 12)
+
+        addHero(context, config, config.taskConfigV2 ?: config.taskConfig, cardContainer)
 
         createHeaderTextView(
             context,
             config.messages.questName,
-            Padding(16, 16, 16, 8)
+            Padding(16, 14, 16, 2)
         ).apply { cardContainer.addView(this) }
 
         createSubTextView(
             context,
-            "${config.messages.gameTitle}\nPromoted by ${config.messages.gamePublisher}",
-            Padding(16, 4, 16, 12)
+            "${config.messages.gameTitle}  •  Promoted by ${config.messages.gamePublisher}",
+            Padding(16, 2, 16, 12)
         ).apply { cardContainer.addView(this) }
 
-        addTaskInfo(context, config.taskConfig, cardContainer)
-        addRewardInfo(context, config.rewardsConfig, cardContainer)
-        quest.userStatus?.let { addStatusInfo(context, it, cardContainer) }
-        addDateInfo(context, config.startsAt, config.expiresAt, cardContainer)
+        addRewardSummary(context, config.rewardsConfig, cardContainer)
+        addTaskSummary(context, config.taskConfigV2 ?: config.taskConfig, cardContainer)
+        addStatusSummary(context, quest, cardContainer)
         linearLayout.addView(cardContainer)
     }
 
-    private fun addTaskInfo(
+    private fun addHero(
         context: Context,
-        taskConfig: QuestTaskConfig,
+        config: QuestConfig,
+        taskConfig: QuestTaskConfig?,
         container: LinearLayout
     ) {
-        createLabelTextView(
-            context,
-            "Tasks:",
-            Padding(16, 8, 16, 4)
-        ).apply { container.addView(this) }
+        val assets = config.assets ?: return
+        val heroAsset = assets.questBarHero ?: assets.hero ?: return
+        val heroHeight = DimenUtils.dpToPx(156)
+        val hero = FrameLayout(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                heroHeight
+            )
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#232428"))
+                cornerRadius = DimenUtils.dpToPx(8).toFloat()
+            }
+            clipToOutline = true
+        }
 
-        taskConfig.tasks.values.forEach { task ->
+        val artwork = SimpleDraweeView(context).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            setImageURI(questAssetUrl(heroAsset))
+        }
+        hero.addView(artwork)
+
+        hero.addView(
+            View(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+                background = GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    intArrayOf(Color.TRANSPARENT, Color.argb(220, 20, 21, 24))
+                )
+            }
+        )
+
+        val tasks = taskConfig?.tasks.orEmpty()
+        if (tasks.isNotEmpty()) {
+            val platformRow = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+            }
+            tasks.keys.distinct().forEach { taskType ->
+                platformRow.addView(createPlatformChip(context, taskType))
+            }
+            hero.addView(
+                HorizontalScrollView(context).apply {
+                    isHorizontalScrollBarEnabled = false
+                    addView(platformRow)
+                    layoutParams = FrameLayout
+                        .LayoutParams(
+                            FrameLayout.LayoutParams.WRAP_CONTENT,
+                            FrameLayout.LayoutParams.WRAP_CONTENT,
+                            Gravity.TOP or Gravity.END
+                        ).apply {
+                            setMargins(
+                                DimenUtils.dpToPx(12),
+                                DimenUtils.dpToPx(10),
+                                DimenUtils.dpToPx(8),
+                                0
+                            )
+                        }
+                }
+            )
+        }
+
+        val logoAsset = assets.logotypeDark ?: assets.logotypeLight
+        if (logoAsset != null) {
+            hero.addView(
+                SimpleDraweeView(context).apply {
+                    layoutParams = FrameLayout
+                        .LayoutParams(
+                            DimenUtils.dpToPx(132),
+                            DimenUtils.dpToPx(56),
+                            Gravity.BOTTOM or Gravity.START
+                        ).apply {
+                            setMargins(
+                                DimenUtils.dpToPx(14),
+                                0,
+                                0,
+                                DimenUtils.dpToPx(10)
+                            )
+                        }
+                    setImageURI(questAssetUrl(logoAsset))
+                }
+            )
+        }
+
+        hero.addView(
             createSubTextView(
                 context,
-                "- ${getTaskDescription(task)}",
-                Padding(24, 2, 16, 2)
-            ).apply { container.addView(this) }
-        }
+                "Ends ${formatDate(context, config.expiresAt)}",
+                Padding(8, 4, 8, 4),
+                Color.WHITE
+            ).apply {
+                gravity = Gravity.CENTER
+                background = GradientDrawable().apply {
+                    setColor(Color.argb(170, 20, 21, 24))
+                    cornerRadius = DimenUtils.dpToPx(10).toFloat()
+                }
+                layoutParams = FrameLayout
+                    .LayoutParams(
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        Gravity.BOTTOM or Gravity.END
+                    ).apply {
+                        setMargins(0, 0, DimenUtils.dpToPx(12), DimenUtils.dpToPx(12))
+                    }
+            }
+        )
+
+        container.addView(hero)
     }
 
-    private fun addRewardInfo(
+    private fun addRewardSummary(
         context: Context,
         rewardsConfig: QuestRewardsConfig,
         container: LinearLayout
     ) {
+        val rewards = rewardsConfig.rewards.map { reward ->
+            reward.messages.nameWithArticle.removePrefix("a ").removePrefix("an ")
+        }
+        if (rewards.isEmpty()) return
+
         createLabelTextView(
             context,
-            "Rewards:",
-            Padding(16, 12, 16, 4)
-        ).apply { container.addView(this) }
-
-        rewardsConfig.rewards.forEach { reward ->
-            val rewardName = reward.messages.nameWithArticle.removePrefix("a ").removePrefix("an ")
-            createSubTextView(
-                context,
-                "- $rewardName (${getRewardType(reward.type)})",
-                Padding(24, 2, 16, 2)
-            ).apply { container.addView(this) }
+            "Reward  •  ${rewards.joinToString("  •  ")}",
+            Padding(16, 4, 16, 6)
+        ).apply {
+            setCompoundDrawablesWithIntrinsicBounds(
+                Utils.tintToTheme(context.getDrawable(R.e.ic_gift_24dp)),
+                null,
+                null,
+                null
+            )
+            compoundDrawablePadding = DimenUtils.dpToPx(8)
+            container.addView(this)
         }
     }
 
-    private fun addStatusInfo(
+    private fun addTaskSummary(
         context: Context,
-        userStatus: QuestUserStatus,
+        taskConfig: QuestTaskConfig?,
         container: LinearLayout
     ) {
-        val statusText = when {
-            userStatus.claimedAt != null -> "Status: Claimed"
-            userStatus.completedAt != null -> "Status: Completed"
-            userStatus.enrolledAt != null -> "Status: In Progress"
-            else -> "Status: Unknown"
+        val tasks = taskConfig?.tasks.orEmpty()
+        if (tasks.isEmpty()) return
+        val descriptions = tasks
+            .map { (taskType, task) ->
+                getTaskDescription(taskType, task)
+            }.distinct()
+
+        createSubTextView(
+            context,
+            descriptions.joinToString(if (taskConfig?.joinOperator == "and") "\n" else "  •  "),
+            Padding(16, 4, 16, 8)
+        ).apply { container.addView(this) }
+    }
+
+    private fun createPlatformChip(context: Context, taskType: String): TextView {
+        val (label, icon) = when (taskType) {
+            "WATCH_VIDEO" -> {
+                "Video" to R.e.ic_videocam_white_24dp
+            }
+
+            "WATCH_VIDEO_ON_MOBILE" -> {
+                "Mobile" to R.e.ic_phone_24dp
+            }
+
+            "PLAY_ON_DESKTOP", "PLAY_ON_DESKTOP_V2", "STREAM_ON_DESKTOP" -> {
+                "Desktop" to R.e.ic_monitor_white_24dp
+            }
+
+            "PLAY_ON_XBOX" -> {
+                "Xbox" to R.e.ic_account_xbox_white_24dp
+            }
+
+            "PLAY_ON_PLAYSTATION" -> {
+                "PlayStation" to R.e.ic_account_playstation_white_24dp
+            }
+
+            else -> {
+                "Activity" to R.e.ic_controller_24dp
+            }
+        }
+        return createSubTextView(
+            context,
+            label,
+            Padding(8, 5, 8, 5),
+            Color.parseColor("#DBDEE1")
+        ).apply {
+            gravity = Gravity.CENTER
+            setCompoundDrawablesWithIntrinsicBounds(
+                Utils.tintToTheme(context.getDrawable(icon)),
+                null,
+                null,
+                null
+            )
+            compoundDrawablePadding = DimenUtils.dpToPx(4)
+            background = GradientDrawable().apply {
+                setColor(Color.argb(205, 35, 36, 40))
+                cornerRadius = DimenUtils.dpToPx(12).toFloat()
+            }
+            layoutParams = LinearLayout
+                .LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { marginEnd = DimenUtils.dpToPx(6) }
+        }
+    }
+
+    private fun addStatusSummary(context: Context, quest: Quest, container: LinearLayout) {
+        val statusView = createSubTextView(
+            context,
+            "",
+            Padding(16, 4, 16, 2),
+            Color.parseColor("#B5BAC1")
+        ).apply {
+            typeface = getCachedFont(context, com.aliucord.Constants.Fonts.whitney_semibold)
+            container.addView(this)
+        }
+        val actionView = createLabelTextView(
+            context,
+            "",
+            Padding(16, 10, 16, 10)
+        ).apply {
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#5865F2"))
+                cornerRadius = DimenUtils.dpToPx(6).toFloat()
+            }
+            layoutParams = LinearLayout
+                .LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(
+                        DimenUtils.dpToPx(16),
+                        DimenUtils.dpToPx(8),
+                        DimenUtils.dpToPx(16),
+                        0
+                    )
+                }
+            container.addView(this)
         }
 
-        createLabelTextView(
-            context,
-            statusText,
-            Padding(16, 12, 16, 4)
-        ).apply { container.addView(this) }
+        fun updateViews(status: QuestUserStatus?) {
+            val (label, color) = when {
+                status?.claimedAt != null -> "Reward claimed" to Color.parseColor("#57F287")
+                status?.completedAt != null -> "Ready to claim" to Color.parseColor("#FEE75C")
+                status?.enrolledAt != null -> "In progress" to Color.parseColor("#5865F2")
+                else -> "Available" to Color.parseColor("#B5BAC1")
+            }
+            statusView.text = "●  $label"
+            statusView.setTextColor(color)
 
-        if (userStatus.progress != null && userStatus.completedAt == null) {
-            userStatus.progress.values.forEach { progress ->
-                val progressText = if (progress.completedAt != null) {
-                    "- ${progress.eventName}: Completed"
-                } else {
-                    "- ${progress.eventName}: ${formatProgressValue(progress.value)}"
+            val videoTask = quest.findVideoTask()
+            when {
+                status?.claimedAt != null -> {
+                    actionView.visibility = View.GONE
                 }
-                createSubTextView(
+
+                status?.completedAt != null -> {
+                    actionView.visibility = View.VISIBLE
+                    actionView.text = "Claim reward"
+                }
+
+                videoTask != null -> {
+                    actionView.visibility = View.VISIBLE
+                    actionView.text = if (status?.enrolledAt == null) {
+                        "Accept & watch"
+                    } else {
+                        "Continue watching"
+                    }
+                }
+
+                else -> {
+                    actionView.visibility = View.GONE
+                }
+            }
+            actionView.isEnabled = true
+            actionView.alpha = 1f
+        }
+
+        fun claimReward(captchaSolution: QuestCaptchaSolution? = null) {
+            actionView.isEnabled = false
+            actionView.alpha = 0.6f
+            actionView.text = if (captchaSolution == null) "Claiming..." else "Verifying..."
+            Utils.threadPool.execute {
+                try {
+                    val updated = QuestsApi.claimReward(quest, captchaSolution)
+                    quest.userStatus = updated
+                    Utils.mainThread.post {
+                        updateViews(updated)
+                        Utils.showToast("Reward claimed")
+                    }
+                } catch (e: Exception) {
+                    logger.error("Failed to claim quest reward", e)
+                    val challenge = (e as? QuestApiException)?.captchaChallenge
+                    if (challenge != null && captchaSolution == null) {
+                        Utils.mainThread.post {
+                            actionView.text = "Complete captcha..."
+                            val request = CaptchaHelper.CaptchaRequest.HCaptcha(
+                                challenge.siteKey,
+                                Utils.appActivity,
+                                challenge.rqdata
+                            )
+                            CaptchaHelper.INSTANCE.tryShowCaptcha(request).subscribe(
+                                object : Subscriber<String>() {
+                                    override fun onNext(token: String) {
+                                        claimReward(
+                                            QuestCaptchaSolution(
+                                                token,
+                                                challenge.rqtoken,
+                                                challenge.sessionId
+                                            )
+                                        )
+                                    }
+
+                                    override fun onError(error: Throwable) {
+                                        logger.error("Quest captcha failed", error)
+                                        updateViews(quest.userStatus)
+                                        Utils.showToast(
+                                            error.message ?: "Captcha failed",
+                                            true
+                                        )
+                                    }
+
+                                    override fun onCompleted() {}
+                                }
+                            )
+                        }
+                    } else {
+                        Utils.mainThread.post {
+                            updateViews(quest.userStatus)
+                            Utils.showToast(e.message ?: "Failed to claim reward", true)
+                        }
+                    }
+                }
+            }
+        }
+
+        actionView.setOnClickListener {
+            val status = quest.userStatus
+            if (status?.completedAt != null && status.claimedAt == null) {
+                claimReward()
+            } else {
+                val videoTask = quest.findVideoTask() ?: return@setOnClickListener
+                Utils.openPageWithProxy(
                     context,
-                    progressText,
-                    Padding(24, 2, 16, 2)
-                ).apply { container.addView(this) }
+                    QuestVideoPage(quest, videoTask.first, videoTask.second) { updated ->
+                        quest.userStatus = updated
+                        updateViews(updated)
+                    }
+                )
+            }
+        }
+        updateViews(quest.userStatus)
+    }
+
+    private fun getTaskDescription(taskType: String, task: QuestTask): String {
+        val type = task.type ?: task.eventName ?: taskType
+        return when (type) {
+            "STREAM_ON_DESKTOP" -> {
+                "Stream for ${formatDuration(task.target)}"
+            }
+
+            "PLAY_ON_DESKTOP", "PLAY_ON_DESKTOP_V2" -> {
+                "Play for ${formatDuration(task.target)}"
+            }
+
+            "PLAY_ON_XBOX" -> {
+                "Play on Xbox for ${formatDuration(task.target)}"
+            }
+
+            "PLAY_ON_PLAYSTATION" -> {
+                "Play on PlayStation for ${formatDuration(task.target)}"
+            }
+
+            "WATCH_VIDEO" -> {
+                "Watch video for ${formatDuration(task.target)}"
+            }
+
+            "WATCH_VIDEO_ON_MOBILE" -> {
+                "Watch video on mobile for ${formatDuration(task.target)}"
+            }
+
+            "PLAY_ACTIVITY" -> {
+                "Play activity for ${formatDuration(task.target)}"
+            }
+
+            "ACHIEVEMENT_IN_ACTIVITY", "ACHIEVEMENT_IN_GAME" -> {
+                task.messages?.taskTitle ?: task.title ?: "Complete achievement"
+            }
+
+            else -> {
+                task.title ?: type
             }
         }
     }
 
-    private fun addDateInfo(
-        context: Context,
-        startsAt: String,
-        expiresAt: String,
-        container: LinearLayout
-    ) {
-        createSubTextView(
-            context,
-            "Starts: ${formatDate(context, startsAt)}\nExpires: ${formatDate(context, expiresAt)}",
-            Padding(16, 12, 16, 8)
-        ).apply { container.addView(this) }
+    private fun questComparator(): Comparator<Quest> {
+        val now = System.currentTimeMillis()
+        return compareBy<Quest> { quest ->
+            val expired = expirationTimestamp(quest) <= now
+            when {
+                expired || quest.userStatus?.claimedAt != null -> 3
+                quest.userStatus?.completedAt != null -> 2
+                quest.findVideoTask() != null -> 0
+                else -> 1
+            }
+        }.thenBy(::expirationTimestamp)
     }
 
-    private fun getTaskDescription(task: QuestTask): String = when (task.eventName) {
-        "STREAM_ON_DESKTOP" -> {
-            "Stream for ${formatDuration(task.target)}"
-        }
-
-        "PLAY_ON_DESKTOP", "PLAY_ON_DESKTOP_V2" -> {
-            "Play for ${formatDuration(task.target)}"
-        }
-
-        "PLAY_ON_XBOX" -> {
-            "Play on Xbox for ${formatDuration(task.target)}"
-        }
-
-        "PLAY_ON_PLAYSTATION" -> {
-            "Play on PlayStation for ${formatDuration(task.target)}"
-        }
-
-        "WATCH_VIDEO" -> {
-            "Watch video for ${formatDuration(task.target)}"
-        }
-
-        "WATCH_VIDEO_ON_MOBILE" -> {
-            "Watch video on mobile for ${formatDuration(task.target)}"
-        }
-
-        "PLAY_ACTIVITY" -> {
-            "Play activity for ${formatDuration(task.target)}"
-        }
-
-        else -> {
-            task.title ?: task.eventName
-        }
-    }
+    private fun expirationTimestamp(quest: Quest): Long =
+        runCatching { TimeUtils.parseUTCDate(quest.config.expiresAt) }
+            .getOrDefault(Long.MAX_VALUE)
+            .takeIf { it > 0 } ?: Long.MAX_VALUE
 
     private fun formatDuration(seconds: Int): String {
+        if (seconds < 60) return "$seconds ${if (seconds == 1) "second" else "seconds"}"
+
         val minutes = seconds / 60
         return when {
             minutes < 60 -> {
-                "$minutes minutes"
+                "$minutes ${if (minutes == 1) "minute" else "minutes"}"
             }
 
             else -> {
                 val hours = minutes / 60
                 val remainingMinutes = minutes % 60
                 if (remainingMinutes > 0) {
-                    "$hours hours $remainingMinutes minutes"
+                    "$hours ${if (hours == 1) "hour" else "hours"} " +
+                        "$remainingMinutes ${if (remainingMinutes == 1) "minute" else "minutes"}"
                 } else {
-                    "$hours hours"
+                    "$hours ${if (hours == 1) "hour" else "hours"}"
                 }
             }
         }
     }
-
-    private fun getRewardType(type: Int): String = when (type) {
-        1 -> "Reward Code"
-        2 -> "In-Game Item"
-        3 -> "Collectible"
-        4 -> "Discord Orbs"
-        5 -> "Fractional Premium"
-        else -> "Unknown"
-    }
-
-    private fun formatProgressValue(value: Int): String =
-        if (value >= 60) "${value / 60} minutes" else "$value seconds"
 
     private fun formatDate(context: Context, isoDate: String): String {
         return try {

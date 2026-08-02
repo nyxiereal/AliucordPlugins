@@ -1,8 +1,6 @@
 package com.github.nyxiereal
 
 import android.content.Context
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.aliucord.annotations.AliucordPlugin
 import com.aliucord.entities.Plugin
 import com.aliucord.patcher.Hook
@@ -26,16 +24,15 @@ class FreeNitroEmojis : Plugin() {
         // Matches emoji URLs both with [name](url) wrapper and plain URLs
         // Group 1: Full URL, Group 2: Emoji ID, Group 3: Extension
         Regex(
-            """(?:\[[a-zA-Z0-9_~]+?]\()?(https://cdn\.discordapp\.com/emojis/(\d+)\.([a-z]{3,4})(?:\?[^)\s]*)?)\)?"""
+            """(?:\[(?:[a-zA-Z0-9_~]+|\u2236[a-zA-Z0-9_~]+\u2236)]\()?(https://cdn\.discordapp\.com/emojis/(\d+)\.(gif|png|webp)(?:\?[^)\s]*)?)\)?"""
         )
     }
     private val markdownRegexSingle by lazy {
         Regex(
-            """^(?:\[[a-zA-Z0-9_~]+?]\()?(https://cdn\.discordapp\.com/emojis/(\d+)\.([a-z]{3,4})(?:\?[^)\s]*)?)\)?$"""
+            """^(?:\[(?:[a-zA-Z0-9_~]+|\u2236[a-zA-Z0-9_~]+\u2236)]\()?(https://cdn\.discordapp\.com/emojis/(\d+)\.(gif|png|webp)(?:\?[^)\s]*)?)\)?$"""
         )
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     override fun start(context: Context) {
         val emojiClass = ModelEmojiCustom::class.java
         val getChatInputTextMethod = emojiClass.getDeclaredMethod("getChatInputText")
@@ -51,119 +48,115 @@ class FreeNitroEmojis : Plugin() {
         patcher.patch(isAvailableMethod, InsteadHook { true })
 
         // Realmoji support: Convert markdown emoji back to Discord format
-        if (settings.getBool(REALMOJI_KEY, REALMOJI_DEFAULT)) {
-            val messageCtor = Message::class.java.declaredConstructors.firstOrNull {
-                !it.isSynthetic
-            } ?: throw IllegalStateException("Didn't find Message ctor")
+        val messageCtor = Message::class.java.declaredConstructors.firstOrNull {
+            !it.isSynthetic &&
+                it.parameterTypes.getOrNull(4) == String::class.java &&
+                it.parameterTypes.getOrNull(12)?.let(List::class.java::isAssignableFrom) == true
+        } ?: throw IllegalStateException("Didn't find Message ctor")
 
-            val markdownRegex = if (settings.getBool(
-                    COMPOUND_SENTENCES_KEY,
-                    COMPOUND_SENTENCES_DEFAULT
-                )
-            ) {
-                markdownRegexCompound
-            } else {
-                markdownRegexSingle
-            }
+        patcher.patch(
+            messageCtor,
+            PreHook { param ->
+                if (!settings.getBool(REALMOJI_KEY, REALMOJI_DEFAULT)) {
+                    return@PreHook
+                }
 
-            patcher.patch(
-                messageCtor,
-                PreHook { param ->
-                    if (param.args[4] != null) {
-                        @Suppress("UNCHECKED_CAST")
-                        val oldEmbeds = param.args[12] as List<MessageEmbed>
-                        val newEmbeds = ArrayList<MessageEmbed>(oldEmbeds)
+                val content = param.args.getOrNull(4) as? String ?: return@PreHook
+                val oldEmbeds = param.args.getOrNull(12) as? List<*>
+                val newEmbeds = oldEmbeds
+                    ?.takeIf { embeds -> embeds.all { it is MessageEmbed } }
+                    ?.mapTo(ArrayList<MessageEmbed>()) { it as MessageEmbed }
+                val markdownRegex = if (
+                    settings.getBool(COMPOUND_SENTENCES_KEY, COMPOUND_SENTENCES_DEFAULT)
+                ) {
+                    markdownRegexCompound
+                } else {
+                    markdownRegexSingle
+                }
 
-                        param.args[4] = markdownRegex.replace(param.args[4] as String) { it ->
-                            val url = it.groupValues[1]
-                            val emojiId = it.groupValues[2]
-                            val extension = it.groupValues[3]
+                param.args[4] = markdownRegex.replace(content) { match ->
+                    val url = match.groupValues[1]
+                    val emojiId = match.groupValues[2]
+                    val extension = match.groupValues[3]
 
-                            var animated = if (extension == "gif") "a" else ""
-                            var emojiName = "UNKNOWN_FAKE_EMOJI"
+                    var animated = if (extension == "gif") "a" else ""
+                    var emojiName = "UNKNOWN_FAKE_EMOJI"
 
-                            try {
-                                URL(url).query?.split("&")?.forEach { queryPair ->
-                                    val pair = queryPair.split("=")
-                                    when {
-                                        extension == "webp" &&
-                                            pair.getOrNull(0) == "animated" &&
-                                            pair.getOrNull(1) == "true" -> {
-                                            animated = "a"
-                                        }
-
-                                        pair.getOrNull(0) == "name" -> {
-                                            emojiName =
-                                                pair.getOrNull(1)?.takeWhile { c ->
-                                                    c.isLetterOrDigit() ||
-                                                        c == '_'
-                                                }
-                                                    ?: emojiName
-                                        }
-                                    }
+                    try {
+                        URL(url).query?.split("&")?.forEach { queryPair ->
+                            val pair = queryPair.split("=")
+                            when {
+                                extension == "webp" &&
+                                    pair.getOrNull(0) == "animated" &&
+                                    pair.getOrNull(1) == "true" -> {
+                                    animated = "a"
                                 }
-                            } catch (e: Exception) {
-                                // Silently ignore URL parsing errors
+
+                                pair.getOrNull(0) == "name" -> {
+                                    emojiName =
+                                        pair.getOrNull(1)?.takeWhile { c ->
+                                            c.isLetterOrDigit() || c == '_'
+                                        } ?: emojiName
+                                }
                             }
-
-                            newEmbeds.removeIf {
-                                it.l().startsWith("https://cdn.discordapp.com/emojis/$emojiId")
-                            }
-
-                            "<$animated:$emojiName:$emojiId>"
                         }
-                        param.args[12] = newEmbeds
-                    }
-                }
-            )
-
-            // Convert F_ emoji back to markdown in outgoing messages
-            val restApiMessageCtor =
-                RestAPIParams.Message::class.java.declaredConstructors.firstOrNull {
-                    !it.isSynthetic
-                } ?: throw IllegalStateException("Didn't find RestAPIParams.Message ctor")
-            val restApiMessageContent =
-                RestAPIParams.Message::class.java.getDeclaredField("content")
-            restApiMessageContent.isAccessible = true
-
-            patcher.patch(
-                restApiMessageCtor,
-                Hook { param ->
-                    var content =
-                        restApiMessageContent.get(param.thisObject) as? String ?: return@Hook
-
-                    content = emojiRegex.replace(content) {
-                        val isFake = it.groupValues[2] == "F_"
-                        if (!isFake) return@replace it.value
-
-                        val isAnimated = it.groupValues[1].isNotEmpty()
-                        val emojiName = it.groupValues[3]
-                        val emojiId = it.groupValues[4]
-                        val useWebp = settings.getBool(USE_WEBP_KEY, USE_WEBP_DEFAULT)
-                        val emoteSize = settings
-                            .getString(
-                                EMOTE_SIZE_KEY,
-                                EMOTE_SIZE_DEFAULT
-                            ).toIntOrNull()
-
-                        // Build URL parameters
-                        val urlBuilder = StringBuilder("https://cdn.discordapp.com/emojis/$emojiId")
-                        if (useWebp) {
-                            urlBuilder.append(".webp?name=$emojiName&lossless=true")
-                            if (isAnimated) urlBuilder.append("&animated=true")
-                        } else {
-                            urlBuilder.append(if (isAnimated) ".gif" else ".png")
-                            urlBuilder.append("?name=$emojiName")
-                        }
-                        if (emoteSize != null) urlBuilder.append("&size=$emoteSize")
-
-                        "[$emojiName]($urlBuilder)"
+                    } catch (_: Exception) {
+                        // Keep the fallback name if a malformed URL reaches this hook.
                     }
 
-                    restApiMessageContent.set(param.thisObject, content)
+                    newEmbeds?.removeAll {
+                        it.l()?.startsWith("https://cdn.discordapp.com/emojis/$emojiId.") == true
+                    }
+
+                    "<$animated:$emojiName:$emojiId>"
                 }
-            )
-        }
+                if (newEmbeds != null) {
+                    param.args[12] = newEmbeds
+                }
+            }
+        )
+
+        // Convert F_ emoji back to markdown in outgoing messages
+        val restApiMessageCtor =
+            RestAPIParams.Message::class.java.declaredConstructors.firstOrNull {
+                !it.isSynthetic
+            } ?: throw IllegalStateException("Didn't find RestAPIParams.Message ctor")
+        val restApiMessageContent = RestAPIParams.Message::class.java.getDeclaredField("content")
+        restApiMessageContent.isAccessible = true
+
+        patcher.patch(
+            restApiMessageCtor,
+            Hook { param ->
+                if (!settings.getBool(REALMOJI_KEY, REALMOJI_DEFAULT)) return@Hook
+
+                var content =
+                    restApiMessageContent.get(param.thisObject) as? String ?: return@Hook
+
+                content = emojiRegex.replace(content) {
+                    val isFake = it.groupValues[2] == "F_"
+                    if (!isFake) return@replace it.value
+
+                    val isAnimated = it.groupValues[1].isNotEmpty()
+                    val emojiName = it.groupValues[3]
+                    val emojiId = it.groupValues[4]
+                    val useWebp = settings.getBool(USE_WEBP_KEY, USE_WEBP_DEFAULT)
+
+                    val urlBuilder = StringBuilder("https://cdn.discordapp.com/emojis/$emojiId")
+                    if (useWebp) {
+                        urlBuilder.append(".webp?name=$emojiName&lossless=true")
+                        if (isAnimated) urlBuilder.append("&animated=true")
+                    } else {
+                        urlBuilder.append(if (isAnimated) ".gif" else ".png")
+                        urlBuilder.append("?name=$emojiName")
+                    }
+                    urlBuilder.append("&size=$EMOTE_SIZE")
+
+                    "[$emojiName]($urlBuilder)"
+                }
+
+                restApiMessageContent.set(param.thisObject, content)
+            }
+        )
 
         val experiments = StoreStream.getExperiments()
         experiments.setOverride("2021-03_nitro_emoji_autocomplete_upsell_android", 1)
@@ -193,13 +186,8 @@ class FreeNitroEmojis : Plugin() {
         }
 
         finalUrl += idStr
-        val emoteSize = settings.getString(EMOTE_SIZE_KEY, EMOTE_SIZE_DEFAULT).toIntOrNull()
-
         finalUrl += if (isAnimated) ".gif?name=$emoteName" else ".png?name=$emoteName"
-
-        if (emoteSize != null) {
-            finalUrl += "&size=$emoteSize"
-        }
+        finalUrl += "&size=$EMOTE_SIZE"
 
         val formatType = settings.getString(FORMAT_TYPE_KEY, FORMAT_TYPE_DEFAULT)
         callFrame.result = when (formatType) {
@@ -215,22 +203,21 @@ class FreeNitroEmojis : Plugin() {
     override fun stop(context: Context) {
         patcher.unpatchAll()
         val experiments = StoreStream.getExperiments()
-        experiments.setOverride("2021-03_nitro_emoji_autocomplete_upsell_android", 0)
+        experiments.clearOverride("2021-03_nitro_emoji_autocomplete_upsell_android")
     }
 
     /**
      * Get a reflected field from cache or compute it if cache is absent
      * @param V type of the field value
      */
-    @RequiresApi(Build.VERSION_CODES.N)
     private inline fun <reified V> Any.getCachedField(name: String, instance: Any? = this): V {
         val clazz = this::class.java
-        return reflectionCache
-            .computeIfAbsent(clazz.name + name) {
-                clazz.getDeclaredField(name).also {
-                    it.isAccessible = true
-                }
-            }.get(instance) as V
+        val cacheKey = clazz.name + name
+        val field = reflectionCache[cacheKey] ?: clazz.getDeclaredField(name).also {
+            it.isAccessible = true
+            reflectionCache[cacheKey] = it
+        }
+        return field.get(instance) as V
     }
 
     init {

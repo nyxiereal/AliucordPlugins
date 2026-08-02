@@ -9,11 +9,11 @@ Some plugins are no longer maintained by their original authors, and may cause p
 # Plugins
 
 ## ViewQuests
-Allows you to view discord quests directly in the user settings.
+Allows you to view and do discord quests directly in the user settings.
 
 ## FreeNitroEmojis
 > [!TIP]
 > This plugin has been forked due to the original maintainer no longer being active.  
 
 Originally by Xinto, with changes made by nyxiereal. Allows you to send nitro emojis without nitro.  
-This fork adds support for markdown and zero-width space styles, and realmoji support.
+This fork adds support for multiple markdown styles, WebP emojis, and realmojis.
