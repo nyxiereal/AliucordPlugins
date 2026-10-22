@@ -1,13 +1,23 @@
-version = "1.2.1"
+version = "1.2.2"
 
 description =
     "Use custom emojis without Nitro"
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+    testImplementation(libs.kotlin.stdlib)
+}
 
 aliucord {
     author("xinto", 423915768191647755L)
 
     changelog.set(
         """
+        # 1.2.2
+        - Restored invisible markdown using blank braille (U+2800), including saved zero-width selections
+        - Fixed realmoji conversion for invisible links and selected outgoing formats
+        - Disabled emoji spoofing in reaction pickers while keeping it enabled in the message picker
+
         # 1.2.1
         - Fixed invalid custom emoji sizes by always requesting 48px emotes
         - Fixed extended markdown realmoji parsing and live settings updates

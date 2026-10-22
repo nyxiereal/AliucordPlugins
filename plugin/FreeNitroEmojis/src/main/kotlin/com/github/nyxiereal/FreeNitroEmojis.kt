@@ -1,16 +1,22 @@
 package com.github.nyxiereal
 
 import android.content.Context
+import android.os.Bundle
+import android.view.View
 import com.aliucord.annotations.AliucordPlugin
 import com.aliucord.entities.Plugin
 import com.aliucord.patcher.Hook
-import com.aliucord.patcher.InsteadHook
 import com.aliucord.patcher.PreHook
 import com.discord.api.message.embed.MessageEmbed
+import com.discord.app.AppBottomSheet
 import com.discord.models.domain.emoji.ModelEmojiCustom
 import com.discord.models.message.Message
 import com.discord.restapi.RestAPIParams
 import com.discord.stores.StoreStream
+import com.discord.widgets.chat.input.emoji.EmojiPickerListener
+import com.discord.widgets.chat.input.emoji.WidgetEmojiPickerSheet
+import com.discord.widgets.chat.list.actions.`WidgetChatListActions$onViewCreated$2$1`
+import com.discord.widgets.chat.list.adapter.`WidgetChatListAdapterEventsHandler$onQuickAddReactionClicked$1$1`
 import com.github.nyxiereal.freenitroemojis.*
 import de.robv.android.xposed.XC_MethodHook
 import java.lang.reflect.Field
@@ -20,18 +26,7 @@ import java.net.URL
 class FreeNitroEmojis : Plugin() {
     private val reflectionCache = HashMap<String, Field>()
     private val emojiRegex by lazy { Regex("""<(a)?:(F_)?([a-zA-Z0-9_]+):(\d+)>""") }
-    private val markdownRegexCompound by lazy {
-        // Matches emoji URLs both with [name](url) wrapper and plain URLs
-        // Group 1: Full URL, Group 2: Emoji ID, Group 3: Extension
-        Regex(
-            """(?:\[(?:[a-zA-Z0-9_~]+|\u2236[a-zA-Z0-9_~]+\u2236)]\()?(https://cdn\.discordapp\.com/emojis/(\d+)\.(gif|png|webp)(?:\?[^)\s]*)?)\)?"""
-        )
-    }
-    private val markdownRegexSingle by lazy {
-        Regex(
-            """^(?:\[(?:[a-zA-Z0-9_~]+|\u2236[a-zA-Z0-9_~]+\u2236)]\()?(https://cdn\.discordapp\.com/emojis/(\d+)\.(gif|png|webp)(?:\?[^)\s]*)?)\)?$"""
-        )
-    }
+    private val reactionPicker = ReactionPickerState()
 
     override fun start(context: Context) {
         val emojiClass = ModelEmojiCustom::class.java
@@ -44,8 +39,28 @@ class FreeNitroEmojis : Plugin() {
 
         patcher.patch(getChatInputTextMethod, Hook { getChatReplacement(it) })
         patcher.patch(getMessageContentReplacementMethod, Hook { getChatReplacement(it) })
-        patcher.patch(isUsableMethod, InsteadHook { true })
-        patcher.patch(isAvailableMethod, InsteadHook { true })
+        patcher.patch(isUsableMethod, PreHook { if (!reactionPicker.isOpen) it.result = true })
+        patcher.patch(isAvailableMethod, PreHook { if (!reactionPicker.isOpen) it.result = true })
+
+        // Reaction and composer sheets both use Chat context; their listeners distinguish them.
+        patcher.patch(
+            WidgetEmojiPickerSheet::class.java.getDeclaredMethod(
+                "onViewCreated", View::class.java, Bundle::class.java
+            ),
+            PreHook {
+                val sheet = it.thisObject as WidgetEmojiPickerSheet
+                val listener = sheet.getCachedField<EmojiPickerListener?>("emojiPickerListenerDelegate")
+                reactionPicker.onOpen(
+                    sheet,
+                    listener is `WidgetChatListActions$onViewCreated$2$1` ||
+                        listener is `WidgetChatListAdapterEventsHandler$onQuickAddReactionClicked$1$1`
+                )
+            }
+        )
+        patcher.patch(
+            AppBottomSheet::class.java.getDeclaredMethod("onDestroyView"),
+            Hook { reactionPicker.onClose(it.thisObject) }
+        )
 
         // Realmoji support: Convert markdown emoji back to Discord format
         val messageCtor = Message::class.java.declaredConstructors.firstOrNull {
@@ -75,9 +90,10 @@ class FreeNitroEmojis : Plugin() {
                 }
 
                 param.args[4] = markdownRegex.replace(content) { match ->
-                    val url = match.groupValues[1]
-                    val emojiId = match.groupValues[2]
-                    val extension = match.groupValues[3]
+                    val urlGroup = if (match.groupValues[1].isNotEmpty()) 1 else 4
+                    val url = match.groupValues[urlGroup]
+                    val emojiId = match.groupValues[urlGroup + 1]
+                    val extension = match.groupValues[urlGroup + 2]
 
                     var animated = if (extension == "gif") "a" else ""
                     var emojiName = "UNKNOWN_FAKE_EMOJI"
@@ -151,7 +167,11 @@ class FreeNitroEmojis : Plugin() {
                     }
                     urlBuilder.append("&size=$EMOTE_SIZE")
 
-                    "[$emojiName]($urlBuilder)"
+                    formatEmojiLink(
+                        emojiName,
+                        urlBuilder.toString(),
+                        settings.getString(FORMAT_TYPE_KEY, FORMAT_TYPE_DEFAULT)
+                    )
                 }
 
                 restApiMessageContent.set(param.thisObject, content)
@@ -163,6 +183,8 @@ class FreeNitroEmojis : Plugin() {
     }
 
     private fun getChatReplacement(callFrame: XC_MethodHook.MethodHookParam) {
+        if (reactionPicker.isOpen) return
+
         val thisObject = callFrame.thisObject as ModelEmojiCustom
         val isUsable = thisObject.getCachedField<Boolean>("isUsable")
         val available = thisObject.getCachedField<Boolean>("available")
@@ -190,18 +212,12 @@ class FreeNitroEmojis : Plugin() {
         finalUrl += "&size=$EMOTE_SIZE"
 
         val formatType = settings.getString(FORMAT_TYPE_KEY, FORMAT_TYPE_DEFAULT)
-        callFrame.result = when (formatType) {
-            FORMAT_EXT_MD -> "[\u2236$emoteName\u2236]($finalUrl)"
-
-            // Using Unicode colon U+2236, `\u2236`
-            FORMAT_MD -> "[$emoteName]($finalUrl)"
-
-            else -> finalUrl
-        }
+        callFrame.result = formatEmojiLink(emoteName, finalUrl, formatType)
     }
 
     override fun stop(context: Context) {
         patcher.unpatchAll()
+        reactionPicker.clear()
         val experiments = StoreStream.getExperiments()
         experiments.clearOverride("2021-03_nitro_emoji_autocomplete_upsell_android")
     }

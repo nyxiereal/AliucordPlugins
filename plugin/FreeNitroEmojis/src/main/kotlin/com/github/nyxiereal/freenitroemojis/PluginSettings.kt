@@ -20,7 +20,8 @@ class PluginSettings(private val settingsAPI: SettingsAPI) : SettingsPage() {
         val formatOptions = listOf(
             "URL" to FORMAT_URL,
             "Extended markdown [\u2236name\u2236](url)" to FORMAT_EXT_MD,
-            "Markdown [name](url)" to FORMAT_MD
+            "Markdown [name](url)" to FORMAT_MD,
+            "Invisible markdown (blank braille U+2800)" to FORMAT_BRAILLE
         )
 
         var selectedFormat = settingsAPI.getString(FORMAT_TYPE_KEY, FORMAT_TYPE_DEFAULT)
