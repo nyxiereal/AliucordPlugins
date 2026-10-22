@@ -65,7 +65,10 @@ class UtilTest {
         )) {
             val link = formatEmojiLink("wave", emojiUrl, FORMAT_URL)
             for (suffix in listOf(",", ".", "!", ";", "?", "text", ":wave:", "<:other:456>")) {
-                assertEquals(":emoji:$suffix", markdownRegexCompound.replace("$link$suffix", ":emoji:"))
+                assertEquals(
+                    ":emoji:$suffix",
+                    markdownRegexCompound.replace("$link$suffix", ":emoji:")
+                )
                 assertEquals("$link$suffix", markdownRegexSingle.replace("$link$suffix", ":emoji:"))
             }
             assertEquals(":emoji::emoji:", markdownRegexCompound.replace("$link$link", ":emoji:"))
@@ -87,7 +90,10 @@ class UtilTest {
             assertEquals(":emoji:", markdownRegexSingle.replace(emojiUrl, ":emoji:"))
             assertEquals("hi :emoji:!", markdownRegexCompound.replace("hi $emojiUrl!", ":emoji:"))
             assertEquals(":emoji:.", markdownRegexCompound.replace("$emojiUrl.", ":emoji:"))
-            assertEquals(":emoji::emoji:", markdownRegexCompound.replace("$emojiUrl$url", ":emoji:"))
+            assertEquals(
+                ":emoji::emoji:",
+                markdownRegexCompound.replace("$emojiUrl$url", ":emoji:")
+            )
         }
     }
 
